@@ -116,6 +116,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                     child: MessageItem(
                       message: current,
                       showHeader: showHeader,
+                      serverId: widget.serverId,
                     ),
                   );
                 },

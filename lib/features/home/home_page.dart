@@ -3,6 +3,7 @@ import 'server_sidebar.dart';
 import '../servers/channel_sidebar.dart';
 import '../chat/chat_room_page.dart';
 import '../../data/services/auth_service.dart';
+import '../direct_messages/dm_list_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -18,13 +19,15 @@ class _HomePageState extends State<HomePage> {
 
   final auth = AuthService();
 
+  // **State để toggle DM list**
+  bool showDMList = false;
+
   void selectServer(String serverId) {
     setState(() {
       selectedServerId = serverId;
-
-      // Khi đổi server, chưa chọn channel nào cả.
       selectedChannelId = null;
       selectedChannelName = null;
+      showDMList = false; // reset khi đổi server
     });
   }
 
@@ -32,6 +35,13 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       selectedChannelId = id;
       selectedChannelName = name;
+      showDMList = false; // reset khi chọn channel
+    });
+  }
+
+  void toggleDMList() {
+    setState(() {
+      showDMList = !showDMList;
     });
   }
 
@@ -43,21 +53,28 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       body: Row(
         children: [
+          // Sidebar
           ServerSidebar(
             selectedServerId: selectedServerId,
             onServerSelected: selectServer,
+            onDMBubbleTapped: toggleDMList, // callback khi click DM bubble
           ),
 
-          ChannelSidebar(
-            serverId: selectedServerId,
-            selectedChannelId: selectedChannelId,
-            onChannelSelected: selectChannel,
-          ),
+          // Nếu đang show DM list → bỏ ChannelSidebar
+          if (!showDMList)
+            ChannelSidebar(
+              serverId: selectedServerId,
+              selectedChannelId: selectedChannelId,
+              onChannelSelected: selectChannel,
+            ),
 
+          // Expanded content
           Expanded(
             child: Stack(
               children: [
-                if (!hasSelectedServer)
+                if (showDMList)
+                  DMListPage()
+                else if (!hasSelectedServer)
                   const Center(
                     child: Text(
                       'Chọn một server để bắt đầu',
