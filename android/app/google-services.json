@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "917940140360",
+    "project_id": "ziscord-4c7ff",
+    "storage_bucket": "ziscord-4c7ff.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:917940140360:android:1f23f454612daff4859b7d",
+        "android_client_info": {
+          "package_name": "com.example.ziscord"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDuKJKVTdLih5dHmPcrUoOvpRmM9qwLyQY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
