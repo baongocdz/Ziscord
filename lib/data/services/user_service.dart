@@ -1,29 +1,42 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/app_user.dart';
 
 class UserService {
-  final _db = FirebaseFirestore.instance;
+  final CollectionReference users =
+      FirebaseFirestore.instance.collection('users');
 
-  Future<AppUser?> getUserInfo(String uid, String serverId) async {
-    final doc = await _db.collection('users').doc(uid).get();
+  Future<void> createUser(AppUser user) async {
+    await users.doc(user.uid).set(user.toMap());
+  }
+
+  Future<AppUser?> getUserById(String uid) async {
+    final doc = await users.doc(uid).get();
+
     if (!doc.exists) return null;
 
-    final serverDoc =
-        await _db.collection('servers').doc(serverId).collection('members').doc(uid).get();
+    return AppUser.fromMap(doc.data() as Map<String, dynamic>);
+  }
 
-    final serverData = serverDoc.data();
-    final nickname = (serverData != null && serverDoc.exists)
-        ? serverData['nickname'] ?? ''
-        : '';
+  Future<void> updateProfile({
+    required String displayName,
+    required String nickname,
+  }) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
 
-    return AppUser(
-      uid: uid,
-      email: doc.data()?['email'] ?? 'unknown',
-      realName: doc.data()?['realName'] ?? 'unknown',
-      nickname: nickname,
-      joinedAt: (serverData != null && serverDoc.exists && serverData['joinedAt'] != null)
-          ? (serverData['joinedAt'] as Timestamp).toDate()
-          : DateTime.now(),
-    );
+    await users.doc(currentUser.uid).update({
+      'displayName': displayName,
+      'nickname': nickname,
+    });
+  }
+
+  Future<void> updateAvatar(String url) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    await users.doc(currentUser.uid).update({
+      'photoURL': url,
+    });
   }
 }

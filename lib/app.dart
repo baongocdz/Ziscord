@@ -1,36 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'data/services/auth_service.dart';
+import 'core/theme/app_theme.dart';
 import 'features/auth/login_page.dart';
-import 'features/home/home_page.dart';
+import 'features/main/main_scaffold.dart';
 
-class ZiscordApp extends StatelessWidget {
-  const ZiscordApp({super.key});
+class MyApp extends StatelessWidget {
+  final User? initialUser;
+  const MyApp({super.key, this.initialUser});
 
   @override
   Widget build(BuildContext context) {
-    final authService = AuthService();
-
     return MaterialApp(
       title: 'Ziscord',
+      theme: AppTheme.dark,
+      home: initialUser != null ? const MainScaffold() : const LoginPage(),
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(),
-      home: StreamBuilder<User?>(
-        stream: authService.authStateChanges,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
-
-          if (snapshot.hasData) {
-            return const HomePage();
-          }
-
-          return const LoginPage();
-        },
-      ),
     );
   }
 }

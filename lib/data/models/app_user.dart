@@ -1,15 +1,35 @@
 class AppUser {
   final String uid;
   final String email;
-  final String realName;
+  final String displayName;
   final String nickname;
-  final DateTime joinedAt;
+  final String? photoURL;
 
   AppUser({
     required this.uid,
     required this.email,
-    required this.realName,
+    required this.displayName,
     required this.nickname,
-    required this.joinedAt,
+    this.photoURL,
   });
+
+  factory AppUser.fromMap(Map<String, dynamic> map) {
+    return AppUser(
+      uid: map['uid'] ?? '',
+      email: map['email'] ?? '',
+      displayName: map['displayName'] ?? '',
+      nickname: map['nickname'] ?? '',
+      photoURL: map['photoURL'],
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'uid': uid,
+      'email': email,
+      'displayName': displayName,
+      'nickname': nickname,
+      'photoURL': photoURL,
+    };
+  }
 }
