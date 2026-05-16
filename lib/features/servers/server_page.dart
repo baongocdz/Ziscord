@@ -5,11 +5,14 @@ import '../../data/models/server.dart';
 import '../../data/models/server_channel.dart';
 import '../../data/models/server_member.dart';
 import '../../data/services/auth_service.dart';
+import '../../data/services/mention_service.dart';
 import '../../data/services/server_service.dart';
+import '../../data/services/voice_service.dart';
 import 'channel_chat_page.dart';
 import 'library_channel_page.dart';
 import 'server_member_list_page.dart';
 import 'server_settings_page.dart';
+import 'voice_channel_page.dart';
 
 class ServerPage extends StatelessWidget {
   final String serverId;
@@ -147,19 +150,27 @@ class _ServerContent extends StatelessWidget {
                   );
                 }
 
-                return _ChannelList(
-                  server: server,
-                  channels: channels,
-                  canManageChannels: canManageChannels,
-                  isAdmin: isAdmin,
-                  onAddText: canManageChannels
-                      ? () => _showAddChannelDialog(
-                          context, server.id, 'text')
-                      : null,
-                  onAddVoice: canManageChannels
-                      ? () => _showAddChannelDialog(
-                          context, server.id, 'voice')
-                      : null,
+                return StreamBuilder<Map<String, int>>(
+                  stream: MentionService().streamServerChannelMentionCounts(
+                      AuthService().currentUser!.uid, server.id),
+                  builder: (context, mentionSnap) {
+                    final mentionCounts = mentionSnap.data ?? const {};
+                    return _ChannelList(
+                      server: server,
+                      channels: channels,
+                      mentionCounts: mentionCounts,
+                      canManageChannels: canManageChannels,
+                      isAdmin: isAdmin,
+                      onAddText: canManageChannels
+                          ? () => _showAddChannelDialog(
+                              context, server.id, 'text')
+                          : null,
+                      onAddVoice: canManageChannels
+                          ? () => _showAddChannelDialog(
+                              context, server.id, 'voice')
+                          : null,
+                    );
+                  },
                 );
               },
             ),
@@ -262,6 +273,7 @@ class _ServerContent extends StatelessWidget {
 class _ChannelList extends StatelessWidget {
   final Server server;
   final List<ServerChannel> channels;
+  final Map<String, int> mentionCounts;
   final bool canManageChannels;
   final bool isAdmin;
   final VoidCallback? onAddText;
@@ -270,6 +282,7 @@ class _ChannelList extends StatelessWidget {
   const _ChannelList({
     required this.server,
     required this.channels,
+    required this.mentionCounts,
     required this.canManageChannels,
     required this.isAdmin,
     this.onAddText,
@@ -280,9 +293,11 @@ class _ChannelList extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ch.isLibrary
-            ? LibraryChannelPage(server: server, channel: ch)
-            : ChannelChatPage(server: server, channel: ch),
+        builder: (_) {
+          if (ch.isVoice) return VoiceChannelPage(server: server, channel: ch);
+          if (ch.isLibrary) return LibraryChannelPage(server: server, channel: ch);
+          return ChannelChatPage(server: server, channel: ch);
+        },
       ),
     );
   }
@@ -390,9 +405,11 @@ class _ChannelList extends StatelessWidget {
           final ch = section[i];
           return _ManageableChannelTile(
             key: ValueKey(ch.id),
+            serverId: server.id,
             channel: ch,
             index: i,
             isAdmin: isAdmin,
+            mentionCount: mentionCounts[ch.id] ?? 0,
             onTap: () => _openChannel(context, ch),
             onRename: () => _renameChannel(context, ch),
             onDelete: () => _deleteChannel(context, ch),
@@ -403,7 +420,9 @@ class _ChannelList extends StatelessWidget {
     return Column(
       children: section
           .map((ch) => _ChannelTile(
+                serverId: server.id,
                 channel: ch,
+                mentionCount: mentionCounts[ch.id] ?? 0,
                 onTap: () => _openChannel(context, ch),
               ))
           .toList(),
@@ -414,17 +433,21 @@ class _ChannelList extends StatelessWidget {
   Widget build(BuildContext context) {
     final textChannels = channels.where((c) => c.isText).toList();
     final voiceChannels = channels.where((c) => c.isVoice).toList();
+    final showTextHeader = textChannels.isNotEmpty || canManageChannels;
+    final showVoiceHeader = voiceChannels.isNotEmpty || canManageChannels;
 
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 8),
       children: [
-        if (textChannels.isNotEmpty) ...[
+        if (showTextHeader) ...[
           _ChannelGroupHeader(label: 'KÊNH VĂN BẢN', onAdd: onAddText),
-          _buildSection(context, textChannels, true),
+          if (textChannels.isNotEmpty)
+            _buildSection(context, textChannels, true),
         ],
-        if (voiceChannels.isNotEmpty) ...[
+        if (showVoiceHeader) ...[
           _ChannelGroupHeader(label: 'KÊNH THOẠI', onAdd: onAddVoice),
-          _buildSection(context, voiceChannels, false),
+          if (voiceChannels.isNotEmpty)
+            _buildSection(context, voiceChannels, false),
         ],
       ],
     );
@@ -432,18 +455,22 @@ class _ChannelList extends StatelessWidget {
 }
 
 class _ManageableChannelTile extends StatelessWidget {
+  final String serverId;
   final ServerChannel channel;
   final int index;
   final bool isAdmin;
+  final int mentionCount;
   final VoidCallback onTap;
   final VoidCallback onRename;
   final VoidCallback onDelete;
 
   const _ManageableChannelTile({
     super.key,
+    required this.serverId,
     required this.channel,
     required this.index,
     required this.isAdmin,
+    required this.mentionCount,
     required this.onTap,
     required this.onRename,
     required this.onDelete,
@@ -457,6 +484,7 @@ class _ManageableChannelTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasMentions = mentionCount > 0;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
       child: Material(
@@ -478,16 +506,34 @@ class _ManageableChannelTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 2),
-                Icon(_icon, color: AppColors.textMuted, size: 18),
+                Icon(_icon,
+                    color: hasMentions
+                        ? AppColors.textPrimary
+                        : AppColors.textMuted,
+                    size: 18),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     channel.name,
-                    style: const TextStyle(
-                        color: AppColors.textMuted, fontSize: 15),
+                    style: TextStyle(
+                        color: hasMentions
+                            ? AppColors.textPrimary
+                            : AppColors.textMuted,
+                        fontWeight: hasMentions
+                            ? FontWeight.w700
+                            : FontWeight.normal,
+                        fontSize: 15),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                if (channel.isVoice) ...[
+                  _VoiceCountChip(serverId: serverId, channelId: channel.id),
+                  const SizedBox(width: 4),
+                ],
+                if (hasMentions) ...[
+                  _MentionBadge(count: mentionCount),
+                  const SizedBox(width: 4),
+                ],
                 if (isAdmin)
                   SizedBox(
                     height: 28,
@@ -583,10 +629,17 @@ class _ChannelGroupHeader extends StatelessWidget {
 // ─── Channel Tile ─────────────────────────────────────────────────────────────
 
 class _ChannelTile extends StatefulWidget {
+  final String serverId;
   final ServerChannel channel;
+  final int mentionCount;
   final VoidCallback onTap;
 
-  const _ChannelTile({required this.channel, required this.onTap});
+  const _ChannelTile({
+    required this.serverId,
+    required this.channel,
+    required this.mentionCount,
+    required this.onTap,
+  });
 
   @override
   State<_ChannelTile> createState() => _ChannelTileState();
@@ -603,6 +656,7 @@ class _ChannelTileState extends State<_ChannelTile> {
 
   @override
   Widget build(BuildContext context) {
+    final hasMentions = widget.mentionCount > 0;
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
@@ -619,20 +673,106 @@ class _ChannelTileState extends State<_ChannelTile> {
           ),
           child: Row(
             children: [
-              Icon(_icon, color: AppColors.textMuted, size: 18),
+              Icon(_icon,
+                  color: hasMentions
+                      ? AppColors.textPrimary
+                      : AppColors.textMuted,
+                  size: 18),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   widget.channel.name,
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
+                  style: TextStyle(
+                    color: hasMentions
+                        ? AppColors.textPrimary
+                        : AppColors.textMuted,
+                    fontWeight:
+                        hasMentions ? FontWeight.w700 : FontWeight.normal,
                     fontSize: 15,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
+              if (widget.channel.isVoice)
+                _VoiceCountChip(
+                    serverId: widget.serverId,
+                    channelId: widget.channel.id),
+              if (hasMentions) _MentionBadge(count: widget.mentionCount),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Voice Count Chip ─────────────────────────────────────────────────────────
+
+class _VoiceCountChip extends StatelessWidget {
+  final String serverId;
+  final String channelId;
+
+  const _VoiceCountChip({required this.serverId, required this.channelId});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<int>(
+      stream: VoiceService().streamMemberCount(serverId, channelId),
+      builder: (context, snap) {
+        final count = snap.data ?? 0;
+        if (count == 0) return const SizedBox.shrink();
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          margin: const EdgeInsets.only(right: 4),
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.headset,
+                  color: AppColors.textMuted, size: 12),
+              const SizedBox(width: 3),
+              Text('$count',
+                  style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700)),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ─── Mention Badge ────────────────────────────────────────────────────────────
+
+class _MentionBadge extends StatelessWidget {
+  final int count;
+
+  const _MentionBadge({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    final label = count > 99 ? '99+' : '$count';
+    return Container(
+      constraints: const BoxConstraints(minWidth: 18),
+      height: 18,
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      decoration: BoxDecoration(
+        color: AppColors.danger,
+        borderRadius: BorderRadius.circular(9),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          height: 1.0,
         ),
       ),
     );

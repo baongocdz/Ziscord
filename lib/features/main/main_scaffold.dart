@@ -285,13 +285,18 @@ class _ServerSidebar extends StatelessWidget {
             onPressed: () async {
               final code = controller.text.trim();
               Navigator.pop(ctx);
-              final error =
+              final result =
                   await ServerService().joinServerByCode(code);
               if (!context.mounted) return;
+              final ok = result.outcome == JoinOutcome.joined ||
+                  result.outcome == JoinOutcome.pending;
+              final msg = result.message ??
+                  (result.outcome == JoinOutcome.joined
+                      ? 'Tham gia server thành công!'
+                      : 'Có lỗi xảy ra');
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text(error ?? 'Tham gia server thành công!'),
-                backgroundColor:
-                    error == null ? AppColors.accent : AppColors.danger,
+                content: Text(msg),
+                backgroundColor: ok ? AppColors.accent : AppColors.danger,
               ));
             },
             child: const Text('Tham gia'),

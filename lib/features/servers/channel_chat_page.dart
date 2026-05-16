@@ -16,6 +16,7 @@ import '../../data/models/server_member.dart';
 import '../../data/models/server_message.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/cloudinary_service.dart';
+import '../../data/services/mention_service.dart';
 import '../../data/services/server_service.dart';
 import '../../data/services/user_service.dart';
 
@@ -38,6 +39,7 @@ class _ChannelChatPageState extends State<ChannelChatPage> {
   final _scrollController = ScrollController();
   final _serverService = ServerService();
   final _userService = UserService();
+  final _mentionService = MentionService();
   final Map<String, AppUser?> _userCache = {};
   late final String _currentUid;
   List<XFile> _stagedImages = [];
@@ -46,6 +48,7 @@ class _ChannelChatPageState extends State<ChannelChatPage> {
   List<ServerMemberInfo> _members = [];
   final Set<String> _mentionedUids = {};
   String? _mentionQuery;
+  String? _lastSeenMessageId;
 
   @override
   void initState() {
@@ -53,6 +56,12 @@ class _ChannelChatPageState extends State<ChannelChatPage> {
     _currentUid = AuthService().currentUser!.uid;
     _messageController.addListener(_onTextChanged);
     _loadMembers();
+    _markMentionsRead();
+  }
+
+  Future<void> _markMentionsRead() async {
+    await _mentionService.markChannelMentionsAsRead(
+        _currentUid, widget.server.id, widget.channel.id);
   }
 
   Future<void> _loadMembers() async {
@@ -408,6 +417,14 @@ class _ChannelChatPageState extends State<ChannelChatPage> {
 
                 final messages = snapshot.data ?? [];
                 _scrollToBottom();
+
+                if (messages.isNotEmpty) {
+                  final latestId = messages.last.id;
+                  if (latestId != _lastSeenMessageId) {
+                    _lastSeenMessageId = latestId;
+                    _markMentionsRead();
+                  }
+                }
 
                 if (messages.isEmpty) {
                   return _EmptyChannelView(channel: widget.channel);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 
 import '../../core/constants/app_colors.dart';
+import '../../data/models/join_request.dart';
 import '../../data/models/server.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/cloudinary_service.dart';
@@ -143,6 +144,15 @@ class _SettingsContentState extends State<_SettingsContent> {
     });
   }
 
+  Future<void> _toggleApproval(bool value) async {
+    await _runWithBusy(() async {
+      await widget.service.setRequiresApproval(widget.server.id, value);
+      _toast(value
+          ? 'Yêu cầu duyệt thành viên đã bật'
+          : 'Tham gia tự do, không cần duyệt');
+    });
+  }
+
   Future<void> _regenerateCode() async {
     final ok = await _confirm(
       title: 'Tạo mã mời mới?',
@@ -251,6 +261,10 @@ class _SettingsContentState extends State<_SettingsContent> {
                 _buildNameSection(),
                 const SizedBox(height: 24),
                 _buildVisibilitySection(),
+                const SizedBox(height: 24),
+                _buildApprovalSection(),
+                const SizedBox(height: 24),
+                _buildPendingRequestsSection(),
                 const SizedBox(height: 24),
               ],
               _buildInviteSection(),
@@ -372,6 +386,87 @@ class _SettingsContentState extends State<_SettingsContent> {
         ),
       ),
     );
+  }
+
+  Widget _buildApprovalSection() {
+    return _Section(
+      title: 'DUYỆT THÀNH VIÊN',
+      description: widget.server.requiresApproval
+          ? 'Người mới phải được admin duyệt trước khi vào.'
+          : 'Mọi yêu cầu tham gia được chấp nhận tự động.',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.channelSidebar,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          activeThumbColor: AppColors.accent,
+          title: const Text('Bật duyệt thành viên',
+              style: TextStyle(color: AppColors.textPrimary)),
+          subtitle: const Text(
+              'Áp dụng cho cả mã mời lẫn yêu cầu từ tab Khám phá',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+          value: widget.server.requiresApproval,
+          onChanged: _busy ? null : _toggleApproval,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPendingRequestsSection() {
+    return StreamBuilder<List<JoinRequest>>(
+      stream: widget.service.streamJoinRequests(widget.server.id),
+      builder: (context, snap) {
+        final requests = snap.data ?? const <JoinRequest>[];
+        return _Section(
+          title: 'YÊU CẦU CHỜ DUYỆT (${requests.length})',
+          description: requests.isEmpty
+              ? 'Chưa có yêu cầu nào.'
+              : 'Nhấn tick để duyệt, X để từ chối.',
+          child: requests.isEmpty
+              ? const SizedBox.shrink()
+              : Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.channelSidebar,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    children: [
+                      for (int i = 0; i < requests.length; i++) ...[
+                        if (i > 0)
+                          const Divider(
+                              color: AppColors.divider,
+                              height: 1,
+                              indent: 56),
+                        _JoinRequestTile(
+                          request: requests[i],
+                          onApprove: () => _approve(requests[i]),
+                          onReject: () => _reject(requests[i]),
+                          busy: _busy,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+        );
+      },
+    );
+  }
+
+  Future<void> _approve(JoinRequest req) async {
+    await _runWithBusy(() async {
+      await widget.service.approveJoinRequest(widget.server.id, req.uid);
+      _toast('Đã duyệt ${req.displayName}');
+    });
+  }
+
+  Future<void> _reject(JoinRequest req) async {
+    await _runWithBusy(() async {
+      await widget.service.rejectJoinRequest(widget.server.id, req.uid);
+      _toast('Đã từ chối ${req.displayName}');
+    });
   }
 
   Widget _buildInviteSection() {
@@ -540,6 +635,74 @@ class _IconPreview extends StatelessWidget {
             color: Colors.white,
             fontWeight: FontWeight.w700,
             fontSize: 26),
+      ),
+    );
+  }
+}
+
+class _JoinRequestTile extends StatelessWidget {
+  final JoinRequest request;
+  final VoidCallback onApprove;
+  final VoidCallback onReject;
+  final bool busy;
+
+  const _JoinRequestTile({
+    required this.request,
+    required this.onApprove,
+    required this.onReject,
+    required this.busy,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
+        children: [
+          if (request.photoURL != null)
+            CircleAvatar(
+              radius: 18,
+              backgroundImage: NetworkImage(request.photoURL!),
+            )
+          else
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: AppColors.accent,
+              child: Text(
+                request.displayName.isNotEmpty
+                    ? request.displayName[0].toUpperCase()
+                    : '?',
+                style: const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.w700),
+              ),
+            ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              request.displayName,
+              style: const TextStyle(
+                  color: AppColors.textPrimary, fontWeight: FontWeight.w600),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.check_circle,
+                color: Color(0xFF23A559), size: 22),
+            tooltip: 'Duyệt',
+            onPressed: busy ? null : onApprove,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+          const SizedBox(width: 12),
+          IconButton(
+            icon: const Icon(Icons.cancel,
+                color: AppColors.danger, size: 22),
+            tooltip: 'Từ chối',
+            onPressed: busy ? null : onReject,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
       ),
     );
   }

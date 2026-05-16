@@ -18,6 +18,7 @@ class _BrowseServersPageState extends State<BrowseServersPage> {
 
   List<Server> _allPublic = [];
   Set<String> _joinedIds = {};
+  Set<String> _pendingIds = {};
   bool _loading = true;
   String? _error;
   String _query = '';
@@ -44,10 +45,17 @@ class _BrowseServersPageState extends State<BrowseServersPage> {
       final uid = AuthService().currentUser!.uid;
       final public = await _service.searchPublicServers('');
       final joined = await _service.streamUserServers(uid).first;
+      final pending = <String>{};
+      for (final s in public) {
+        final hasPending =
+            await _service.streamHasPendingRequest(s.id, uid).first;
+        if (hasPending) pending.add(s.id);
+      }
       if (!mounted) return;
       setState(() {
         _allPublic = public;
         _joinedIds = joined.map((s) => s.id).toSet();
+        _pendingIds = pending;
         _loading = false;
       });
     } catch (e) {
@@ -67,14 +75,36 @@ class _BrowseServersPageState extends State<BrowseServersPage> {
 
   Future<void> _join(Server server) async {
     setState(() => _joining.add(server.id));
-    final error = await _service.joinServerById(server.id);
+    final result = await _service.joinServerById(server.id);
     if (!mounted) return;
-    setState(() => _joining.remove(server.id));
+    setState(() {
+      _joining.remove(server.id);
+      if (result.outcome == JoinOutcome.joined) {
+        _joinedIds.add(server.id);
+      } else if (result.outcome == JoinOutcome.pending) {
+        _pendingIds.add(server.id);
+      }
+    });
+    final ok = result.outcome == JoinOutcome.joined ||
+        result.outcome == JoinOutcome.pending;
+    final msg = result.message ??
+        (result.outcome == JoinOutcome.joined
+            ? 'Đã tham gia ${server.name}!'
+            : 'Có lỗi xảy ra');
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(error ?? 'Đã tham gia ${server.name}!'),
-      backgroundColor: error == null ? AppColors.accent : AppColors.danger,
+      content: Text(msg),
+      backgroundColor: ok ? AppColors.accent : AppColors.danger,
     ));
-    if (error == null) setState(() => _joinedIds.add(server.id));
+  }
+
+  Future<void> _cancelRequest(Server server) async {
+    await _service.cancelMyJoinRequest(server.id);
+    if (!mounted) return;
+    setState(() => _pendingIds.remove(server.id));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('Đã huỷ yêu cầu'),
+      backgroundColor: AppColors.accent,
+    ));
   }
 
   @override
@@ -197,8 +227,10 @@ class _BrowseServersPageState extends State<BrowseServersPage> {
         itemBuilder: (context, i) => _ServerTile(
           server: servers[i],
           isJoined: _joinedIds.contains(servers[i].id),
+          isPending: _pendingIds.contains(servers[i].id),
           isJoining: _joining.contains(servers[i].id),
           onJoin: () => _join(servers[i]),
+          onCancelRequest: () => _cancelRequest(servers[i]),
         ),
       ),
     );
@@ -210,15 +242,78 @@ class _BrowseServersPageState extends State<BrowseServersPage> {
 class _ServerTile extends StatelessWidget {
   final Server server;
   final bool isJoined;
+  final bool isPending;
   final bool isJoining;
   final VoidCallback onJoin;
+  final VoidCallback onCancelRequest;
 
   const _ServerTile({
     required this.server,
     required this.isJoined,
+    required this.isPending,
     required this.isJoining,
     required this.onJoin,
+    required this.onCancelRequest,
   });
+
+  Widget _buildTrailing() {
+    if (isJoined) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: const Text('Đã tham gia',
+            style: TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w600)),
+      );
+    }
+    if (isJoining) {
+      return const SizedBox(
+        width: 20,
+        height: 20,
+        child: CircularProgressIndicator(
+            color: AppColors.accent, strokeWidth: 2),
+      );
+    }
+    if (isPending) {
+      return OutlinedButton(
+        onPressed: onCancelRequest,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.textMuted,
+          side: const BorderSide(color: AppColors.divider),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6)),
+          textStyle:
+              const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        ),
+        child: const Text('Chờ duyệt'),
+      );
+    }
+    return ElevatedButton(
+      onPressed: onJoin,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.accent,
+        foregroundColor: Colors.white,
+        padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(6)),
+        textStyle:
+            const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+      ),
+      child: Text(server.requiresApproval ? 'Yêu cầu tham gia' : 'Tham gia'),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -235,43 +330,7 @@ class _ServerTile extends StatelessWidget {
         server.isPublic ? 'Server công khai' : 'Server riêng tư',
         style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
       ),
-      trailing: isJoined
-          ? Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: const Text('Đã tham gia',
-                  style: TextStyle(
-                      color: AppColors.textMuted,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600)),
-            )
-          : isJoining
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                      color: AppColors.accent, strokeWidth: 2),
-                )
-              : ElevatedButton(
-                  onPressed: onJoin,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.accent,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 6),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6)),
-                    textStyle: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w600),
-                  ),
-                  child: const Text('Tham gia'),
-                ),
+      trailing: _buildTrailing(),
     );
   }
 }

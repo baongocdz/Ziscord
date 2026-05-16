@@ -4,6 +4,10 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Ziscord cần truy cập micro để bạn nói chuyện trong kênh thoại.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>Ziscord dùng Bluetooth cho tai nghe trong kênh thoại.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

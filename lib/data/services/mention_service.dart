@@ -26,12 +26,49 @@ class MentionService {
         .map((snap) => snap.docs.length);
   }
 
+  /// Unread mention counts per channel in a single server. Keyed by channelId.
+  Stream<Map<String, int>> streamServerChannelMentionCounts(
+      String uid, String serverId) {
+    return _inbox(uid)
+        .where('read', isEqualTo: false)
+        .where('context', isEqualTo: 'channel')
+        .where('serverId', isEqualTo: serverId)
+        .snapshots()
+        .map((snap) {
+      final counts = <String, int>{};
+      for (final doc in snap.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final cid = data['channelId'] as String?;
+        if (cid == null) continue;
+        counts[cid] = (counts[cid] ?? 0) + 1;
+      }
+      return counts;
+    });
+  }
+
   Future<void> markAsRead(String uid, String mentionId) {
     return _inbox(uid).doc(mentionId).update({'read': true});
   }
 
   Future<void> markAllAsRead(String uid) async {
     final snap = await _inbox(uid).where('read', isEqualTo: false).get();
+    if (snap.docs.isEmpty) return;
+    final batch = _db.batch();
+    for (final doc in snap.docs) {
+      batch.update(doc.reference, {'read': true});
+    }
+    await batch.commit();
+  }
+
+  /// Marks every unread channel-mention in a given channel as read.
+  Future<void> markChannelMentionsAsRead(
+      String uid, String serverId, String channelId) async {
+    final snap = await _inbox(uid)
+        .where('read', isEqualTo: false)
+        .where('context', isEqualTo: 'channel')
+        .where('serverId', isEqualTo: serverId)
+        .where('channelId', isEqualTo: channelId)
+        .get();
     if (snap.docs.isEmpty) return;
     final batch = _db.batch();
     for (final doc in snap.docs) {

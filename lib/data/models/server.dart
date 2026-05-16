@@ -6,6 +6,7 @@ class Server {
   final String ownerId;
   final String? iconUrl;
   final bool isPublic;
+  final bool requiresApproval;
   final String inviteCode;
   final DateTime createdAt;
 
@@ -15,6 +16,7 @@ class Server {
     required this.ownerId,
     this.iconUrl,
     required this.isPublic,
+    required this.requiresApproval,
     required this.inviteCode,
     required this.createdAt,
   });
@@ -27,6 +29,7 @@ class Server {
       ownerId: map['ownerId'] ?? '',
       iconUrl: map['iconUrl'],
       isPublic: map['isPublic'] ?? false,
+      requiresApproval: map['requiresApproval'] ?? false,
       inviteCode: map['inviteCode'] ?? '',
       createdAt: raw is Timestamp ? raw.toDate() : DateTime.now(),
     );
@@ -37,6 +40,7 @@ class Server {
         'ownerId': ownerId,
         'iconUrl': iconUrl,
         'isPublic': isPublic,
+        'requiresApproval': requiresApproval,
         'inviteCode': inviteCode,
         'createdAt': Timestamp.fromDate(createdAt),
       };
