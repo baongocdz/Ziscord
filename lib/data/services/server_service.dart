@@ -21,6 +21,27 @@ class JoinResult {
   const JoinResult(this.outcome, [this.message]);
 }
 
+/// One image posted somewhere in the server, used by the search/media view.
+class ServerMediaItem {
+  final String messageId;
+  final String channelId;
+  final String channelName;
+  final String senderId;
+  final String senderName;
+  final String imageUrl;
+  final DateTime timestamp;
+
+  const ServerMediaItem({
+    required this.messageId,
+    required this.channelId,
+    required this.channelName,
+    required this.senderId,
+    required this.senderName,
+    required this.imageUrl,
+    required this.timestamp,
+  });
+}
+
 class ServerService {
   final _db = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
@@ -313,6 +334,7 @@ class ServerService {
     required String name,
     String type = 'text',
     String subtype = 'chat',
+    String? icon,
     int? position,
   }) async {
     await _channels(serverId).add({
@@ -320,7 +342,16 @@ class ServerService {
       'type': type,
       'subtype': subtype,
       'position': position ?? DateTime.now().millisecondsSinceEpoch,
+      if (icon != null && icon.isNotEmpty) 'icon': icon,
+      'messageCount': 0,
       'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> setChannelIcon(
+      String serverId, String channelId, String? icon) async {
+    await _channels(serverId).doc(channelId).update({
+      'icon': (icon == null || icon.isEmpty) ? FieldValue.delete() : icon,
     });
   }
 
@@ -387,6 +418,15 @@ class ServerService {
     }
     if (mentions.isNotEmpty) msg['mentions'] = mentions;
     final msgRef = await _messages(serverId, channelId).add(msg);
+
+    // Bump the channel's total message count, and bump the sender's own
+    // channelReads counter by the same amount so their unread badge stays 0.
+    await _channels(serverId).doc(channelId).update({
+      'messageCount': FieldValue.increment(1),
+    });
+    await _members(serverId).doc(uid).set({
+      'channelReads': {channelId: FieldValue.increment(1)},
+    }, SetOptions(merge: true));
 
     if (mentions.isNotEmpty) {
       final serverDoc = await _servers.doc(serverId).get();
@@ -500,6 +540,62 @@ class ServerService {
       return ServerMember.fromMap(
           doc.data() as Map<String, dynamic>, doc.id);
     });
+  }
+
+  Stream<int> streamMemberCount(String serverId) {
+    return _members(serverId).snapshots().map((snap) => snap.docs.length);
+  }
+
+  /// Marks all current messages in this channel as read for the current user.
+  /// Stores the channel's current messageCount in the member doc so the unread
+  /// badge resets to zero until new messages arrive.
+  Future<void> markChannelAsRead(
+      String serverId, String channelId) async {
+    final uid = _currentUid;
+    final channelDoc = await _channels(serverId).doc(channelId).get();
+    if (!channelDoc.exists) return;
+    final count =
+        ((channelDoc.data() as Map<String, dynamic>)['messageCount'] as num?)
+                ?.toInt() ??
+            0;
+    final memberDoc = await _members(serverId).doc(uid).get();
+    if (!memberDoc.exists) return;
+    await _members(serverId).doc(uid).update({
+      'channelReads.$channelId': count,
+    });
+  }
+
+  // ─── Media (images across channels in a server) ───────────────────────────────
+
+  Future<List<ServerMediaItem>> getServerMedia(String serverId) async {
+    final channelsSnap = await _channels(serverId).get();
+    final items = <ServerMediaItem>[];
+    for (final cDoc in channelsSnap.docs) {
+      final cData = cDoc.data() as Map<String, dynamic>;
+      if ((cData['type'] ?? 'text') != 'text') continue;
+      final channelName = cData['name'] ?? '';
+      final msgsSnap = await _messages(serverId, cDoc.id)
+          .orderBy('timestamp', descending: true)
+          .limit(200)
+          .get();
+      for (final mDoc in msgsSnap.docs) {
+        final m = mDoc.data() as Map<String, dynamic>;
+        final url = m['imageUrl'] as String?;
+        if (url == null || url.isEmpty) continue;
+        final raw = m['timestamp'];
+        items.add(ServerMediaItem(
+          messageId: mDoc.id,
+          channelId: cDoc.id,
+          channelName: channelName,
+          senderId: m['senderId'] ?? '',
+          senderName: m['senderName'] ?? '',
+          imageUrl: url,
+          timestamp: raw is Timestamp ? raw.toDate() : DateTime.now(),
+        ));
+      }
+    }
+    items.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return items;
   }
 
   // ─── Library (Forum) ──────────────────────────────────────────────────────────

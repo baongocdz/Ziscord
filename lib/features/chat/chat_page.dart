@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/user_avatar.dart';
 import '../../data/models/friend.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/dm_service.dart';
@@ -212,6 +213,7 @@ class _ChatPageState extends State<ChatPage> {
                 lastMessage: preview?.lastMessage ?? '',
                 timeText: _formatTime(preview?.updatedAt),
                 isUnread: preview?.isUnread ?? false,
+                unreadCount: preview?.unreadCount ?? 0,
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -253,11 +255,15 @@ class _ChatPageState extends State<ChatPage> {
             itemCount: results.length,
             itemBuilder: (context, index) {
               final r = results[index];
-              return _ConversationTile(
-                friend: Friend(
+              final original = friends.firstWhere(
+                (f) => f.uid == r.friendUid,
+                orElse: () => Friend(
                     uid: r.friendUid,
                     displayName: r.friendName,
                     nickname: r.friendName),
+              );
+              return _ConversationTile(
+                friend: original,
                 lastMessage: r.messageText,
                 timeText: _formatTime(r.timestamp),
                 onTap: () => Navigator.push(
@@ -283,6 +289,7 @@ class _ConversationTile extends StatefulWidget {
   final String lastMessage;
   final String timeText;
   final bool isUnread;
+  final int unreadCount;
   final VoidCallback onTap;
 
   const _ConversationTile({
@@ -291,6 +298,7 @@ class _ConversationTile extends StatefulWidget {
     required this.timeText,
     required this.onTap,
     this.isUnread = false,
+    this.unreadCount = 0,
   });
 
   @override
@@ -317,7 +325,11 @@ class _ConversationTileState extends State<_ConversationTile> {
           ),
           child: Row(
             children: [
-              _Avatar(name: widget.friend.displayName),
+              UserAvatar(
+                name: widget.friend.displayName,
+                photoURL: widget.friend.photoURL,
+                radius: 20,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -374,7 +386,31 @@ class _ConversationTileState extends State<_ConversationTile> {
                                 )
                               : const SizedBox.shrink(),
                         ),
-                        if (widget.isUnread)
+                        if (widget.unreadCount > 0)
+                          Container(
+                            margin: const EdgeInsets.only(left: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            constraints:
+                                const BoxConstraints(minWidth: 18),
+                            decoration: BoxDecoration(
+                              color: AppColors.danger,
+                              borderRadius: BorderRadius.circular(9),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              widget.unreadCount > 99
+                                  ? '99+'
+                                  : '${widget.unreadCount}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                height: 1.0,
+                              ),
+                            ),
+                          )
+                        else if (widget.isUnread)
                           Container(
                             width: 8,
                             height: 8,
@@ -397,26 +433,3 @@ class _ConversationTileState extends State<_ConversationTile> {
   }
 }
 
-// ─── Avatar ───────────────────────────────────────────────────────────────────
-
-class _Avatar extends StatelessWidget {
-  final String name;
-
-  const _Avatar({required this.name});
-
-  @override
-  Widget build(BuildContext context) {
-    return CircleAvatar(
-      radius: 20,
-      backgroundColor: AppColors.accent,
-      child: Text(
-        name.isNotEmpty ? name[0].toUpperCase() : '?',
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w700,
-          fontSize: 16,
-        ),
-      ),
-    );
-  }
-}

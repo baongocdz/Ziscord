@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/channel_icon_picker.dart';
 import '../../core/widgets/user_avatar.dart';
 import '../../data/models/server.dart';
 import '../../data/models/server_channel.dart';
@@ -34,6 +35,7 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
   bool _joining = false;
   bool _connected = false;
   bool _muted = false;
+  bool _listenOnly = false;
   String? _errorMessage;
   ConnectionStateType? _agoraState;
 
@@ -71,14 +73,31 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
       setState(() {
         _joining = false;
         _connected = true;
+        _listenOnly = _voiceService.isListenOnly;
+        _muted = _voiceService.isMuted;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _joining = false;
-        _errorMessage = 'Lỗi vào kênh: $e';
+        _errorMessage = _translateError(e);
       });
     }
+  }
+
+  String _translateError(Object e) {
+    final s = e.toString();
+    if (s.contains('NotFoundError') ||
+        s.contains('Requested device not found')) {
+      return 'Không tìm thấy microphone. Cắm hoặc bật micro trong cài đặt hệ thống, sau đó thử lại.';
+    }
+    if (s.contains('NotAllowedError') || s.contains('Permission')) {
+      return 'Bạn đã chặn quyền microphone. Cho phép quyền trong cài đặt trình duyệt rồi thử lại.';
+    }
+    if (s.contains('NotReadableError')) {
+      return 'Microphone đang được app khác sử dụng. Tắt app đó (Zoom, OBS, Discord…) rồi thử lại.';
+    }
+    return 'Lỗi vào kênh: $e';
   }
 
   Future<void> _toggleMute() async {
@@ -122,8 +141,12 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
           titleSpacing: 0,
           title: Row(
             children: [
-              const Icon(Icons.volume_up_rounded,
-                  color: AppColors.textMuted, size: 18),
+              ChannelIcon(
+                customIcon: widget.channel.icon,
+                fallbackIcon: Icons.volume_up_rounded,
+                color: AppColors.textMuted,
+                size: 18,
+              ),
               const SizedBox(width: 6),
               Text(widget.channel.name,
                   style: const TextStyle(
@@ -141,6 +164,7 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
         body: Column(
           children: [
             if (_connected) _buildStatusBanner(),
+            if (_connected && _listenOnly) _buildListenOnlyBanner(),
             Expanded(child: _buildBody()),
             _buildControlBar(),
           ],
@@ -164,6 +188,26 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
       default:
         return 'Đang khởi tạo...';
     }
+  }
+
+  Widget _buildListenOnlyBanner() {
+    return Container(
+      width: double.infinity,
+      color: AppColors.accent.withValues(alpha: 0.12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: const Row(
+        children: [
+          Icon(Icons.hearing, color: AppColors.accent, size: 16),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Chế độ chỉ nghe — máy không có micro hoặc bị chặn quyền. Bạn vẫn nghe được người khác nói.',
+              style: TextStyle(color: AppColors.accent, fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildStatusBanner() {
@@ -277,11 +321,17 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _circleBtn(
-            icon: _muted ? Icons.mic_off : Icons.mic,
-            color: _muted ? AppColors.danger : AppColors.textPrimary,
+            icon: _listenOnly
+                ? Icons.mic_off
+                : (_muted ? Icons.mic_off : Icons.mic),
+            color: (_listenOnly || _muted)
+                ? AppColors.danger
+                : AppColors.textPrimary,
             bg: AppColors.background,
-            onTap: _toggleMute,
-            tooltip: _muted ? 'Bật micro' : 'Tắt micro',
+            onTap: _listenOnly ? null : _toggleMute,
+            tooltip: _listenOnly
+                ? 'Không có micro'
+                : (_muted ? 'Bật micro' : 'Tắt micro'),
           ),
           const SizedBox(width: 24),
           _circleBtn(
@@ -324,7 +374,7 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
     required IconData icon,
     required Color color,
     required Color bg,
-    required VoidCallback onTap,
+    required VoidCallback? onTap,
     required String tooltip,
   }) {
     return Tooltip(
@@ -335,8 +385,15 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
         child: Container(
           width: 56,
           height: 56,
-          decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-          child: Icon(icon, color: color, size: 26),
+          decoration: BoxDecoration(
+            color: onTap == null ? bg.withValues(alpha: 0.5) : bg,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            color: onTap == null ? color.withValues(alpha: 0.5) : color,
+            size: 26,
+          ),
         ),
       ),
     );

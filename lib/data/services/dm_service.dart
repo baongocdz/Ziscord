@@ -39,15 +39,41 @@ class DMService {
       final rawUpdatedAt = data['updatedAt'];
       final updatedAt = rawUpdatedAt is Timestamp ? rawUpdatedAt.toDate() : null;
 
-      final lastReadRaw = (data['lastRead'] as Map<String, dynamic>?)?[currentUserId];
-      final lastRead = lastReadRaw is Timestamp ? lastReadRaw.toDate() : null;
-      final isUnread = updatedAt != null && (lastRead == null || updatedAt.isAfter(lastRead));
+      final messageCount = (data['messageCount'] as num?)?.toInt() ?? 0;
+      final lastReadCount = ((data['lastReadCount']
+              as Map<String, dynamic>?)?[currentUserId] as num?)
+              ?.toInt() ??
+          0;
+      final unread = (messageCount - lastReadCount).clamp(0, 999999);
 
       return ChatPreview(
         lastMessage: data['lastMessage'] ?? 'Chưa có tin nhắn',
         updatedAt: updatedAt,
-        isUnread: isUnread,
+        isUnread: unread > 0,
+        unreadCount: unread,
       );
+    });
+  }
+
+  /// Total unread DM messages across all chats this user participates in.
+  Stream<int> streamTotalUnread(String currentUserId) {
+    return _firestore
+        .collection('dm_chats')
+        .where('participants', arrayContains: currentUserId)
+        .snapshots()
+        .map((snap) {
+      int total = 0;
+      for (final doc in snap.docs) {
+        final data = doc.data();
+        final messageCount = (data['messageCount'] as num?)?.toInt() ?? 0;
+        final lastReadCount = ((data['lastReadCount']
+                as Map<String, dynamic>?)?[currentUserId] as num?)
+                ?.toInt() ??
+            0;
+        final unread = messageCount - lastReadCount;
+        if (unread > 0) total += unread;
+      }
+      return total;
     });
   }
 
@@ -56,7 +82,12 @@ class DMService {
     final ref = _firestore.collection('dm_chats').doc(chatId);
     final doc = await ref.get();
     if (!doc.exists) return;
-    await ref.update({'lastRead.$currentUserId': FieldValue.serverTimestamp()});
+    final messageCount =
+        ((doc.data() ?? {})['messageCount'] as num?)?.toInt() ?? 0;
+    await ref.update({
+      'lastRead.$currentUserId': FieldValue.serverTimestamp(),
+      'lastReadCount.$currentUserId': messageCount,
+    });
   }
 
   Future<List<MessageSearchResult>> searchMessages({
@@ -174,6 +205,8 @@ class DMService {
       'lastMessage': imageUrl != null && text.isEmpty ? '📷 Ảnh' : text,
       'updatedAt': FieldValue.serverTimestamp(),
       'lastRead': {senderId: FieldValue.serverTimestamp()},
+      'messageCount': FieldValue.increment(1),
+      'lastReadCount': {senderId: FieldValue.increment(1)},
     }, SetOptions(merge: true));
 
     final msg = <String, dynamic>{
@@ -210,11 +243,13 @@ class ChatPreview {
   final String lastMessage;
   final DateTime? updatedAt;
   final bool isUnread;
+  final int unreadCount;
 
   ChatPreview({
     required this.lastMessage,
     required this.updatedAt,
     this.isUnread = false,
+    this.unreadCount = 0,
   });
 }
 

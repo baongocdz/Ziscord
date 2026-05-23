@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/channel_icon_picker.dart';
 import '../../data/models/library_post.dart';
 import '../../data/models/server.dart';
 import '../../data/models/server_channel.dart';
@@ -23,8 +24,12 @@ class LibraryChannelPage extends StatelessWidget {
         backgroundColor: AppColors.channelSidebar,
         title: Row(
           children: [
-            const Icon(Icons.menu_book_rounded,
-                color: AppColors.textMuted, size: 18),
+            ChannelIcon(
+              customIcon: channel.icon,
+              fallbackIcon: Icons.menu_book_rounded,
+              color: AppColors.textMuted,
+              size: 18,
+            ),
             const SizedBox(width: 6),
             Text(channel.name,
                 style: const TextStyle(

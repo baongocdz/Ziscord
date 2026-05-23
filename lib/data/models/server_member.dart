@@ -33,6 +33,7 @@ class ServerMember {
   final String? serverNickname; // null = dùng displayName toàn cục
   final bool canCreateChannel;
   final DateTime joinedAt;
+  final Map<String, int> channelReads; // channelId -> messageCount đã đọc
 
   ServerMember({
     required this.userId,
@@ -40,6 +41,7 @@ class ServerMember {
     this.serverNickname,
     this.canCreateChannel = false,
     required this.joinedAt,
+    this.channelReads = const {},
   });
 
   bool get isAdmin => role == 'admin';
@@ -48,12 +50,20 @@ class ServerMember {
 
   factory ServerMember.fromMap(Map<String, dynamic> map, String userId) {
     final raw = map['joinedAt'];
+    final readsRaw = map['channelReads'] as Map<String, dynamic>?;
+    final reads = <String, int>{};
+    if (readsRaw != null) {
+      readsRaw.forEach((k, v) {
+        if (v is num) reads[k] = v.toInt();
+      });
+    }
     return ServerMember(
       userId: userId,
       role: map['role'] ?? 'member',
       serverNickname: map['serverNickname'] as String?,
       canCreateChannel: map['canCreateChannel'] ?? false,
       joinedAt: raw is Timestamp ? raw.toDate() : DateTime.now(),
+      channelReads: reads,
     );
   }
 
@@ -62,5 +72,6 @@ class ServerMember {
         'serverNickname': serverNickname,
         'canCreateChannel': canCreateChannel,
         'joinedAt': Timestamp.fromDate(joinedAt),
+        'channelReads': channelReads,
       };
 }

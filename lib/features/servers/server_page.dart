@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/channel_icon_picker.dart';
 import '../../data/models/server.dart';
 import '../../data/models/server_channel.dart';
 import '../../data/models/server_member.dart';
 import '../../data/services/auth_service.dart';
-import '../../data/services/mention_service.dart';
 import '../../data/services/server_service.dart';
 import '../../data/services/voice_service.dart';
 import 'channel_chat_page.dart';
 import 'library_channel_page.dart';
 import 'server_member_list_page.dart';
+import 'server_search_page.dart';
 import 'server_settings_page.dart';
 import 'voice_channel_page.dart';
 
@@ -57,13 +58,15 @@ class _ServerContent extends StatelessWidget {
         final member = memberSnap.data;
         final isAdmin = member?.isAdmin ?? false;
         final canManageChannels = member?.canManageChannels ?? false;
-        return _buildContent(context, isAdmin, canManageChannels);
+        final channelReads = member?.channelReads ?? const <String, int>{};
+        return _buildContent(
+            context, isAdmin, canManageChannels, channelReads);
       },
     );
   }
 
-  Widget _buildContent(
-      BuildContext context, bool isAdmin, bool canManageChannels) {
+  Widget _buildContent(BuildContext context, bool isAdmin,
+      bool canManageChannels, Map<String, int> channelReads) {
     return Container(
       color: AppColors.channelSidebar,
       child: Column(
@@ -76,51 +79,90 @@ class _ServerContent extends StatelessWidget {
                   bottom: BorderSide(color: AppColors.divider, width: 1)),
             ),
             padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
+                const EdgeInsets.fromLTRB(16, 12, 8, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    server.name,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.people_outline,
-                      color: AppColors.textMuted, size: 20),
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ServerMemberListPage(
-                        server: server,
-                        isAdmin: isAdmin,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            server.name,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          StreamBuilder<int>(
+                            stream: service.streamMemberCount(server.id),
+                            builder: (context, snap) {
+                              final count = snap.data ?? 0;
+                              return Row(
+                                children: [
+                                  Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFF23A559),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '$count thành viên',
+                                    style: const TextStyle(
+                                      color: AppColors.textMuted,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  tooltip: 'Thành viên',
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.settings,
-                      color: AppColors.textMuted, size: 20),
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          ServerSettingsPage(server: server),
+                    IconButton(
+                      icon: const Icon(Icons.people_outline,
+                          color: AppColors.textMuted, size: 20),
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ServerMemberListPage(
+                            server: server,
+                            isAdmin: isAdmin,
+                          ),
+                        ),
+                      ),
+                      tooltip: 'Thành viên',
+                      padding: const EdgeInsets.all(6),
+                      constraints: const BoxConstraints(),
                     ),
-                  ),
-                  tooltip: 'Cài đặt server',
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
+                    IconButton(
+                      icon: const Icon(Icons.settings,
+                          color: AppColors.textMuted, size: 20),
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              ServerSettingsPage(server: server),
+                        ),
+                      ),
+                      tooltip: 'Cài đặt server',
+                      padding: const EdgeInsets.all(6),
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 10),
+                _SearchBar(server: server),
               ],
             ),
           ),
@@ -150,27 +192,20 @@ class _ServerContent extends StatelessWidget {
                   );
                 }
 
-                return StreamBuilder<Map<String, int>>(
-                  stream: MentionService().streamServerChannelMentionCounts(
-                      AuthService().currentUser!.uid, server.id),
-                  builder: (context, mentionSnap) {
-                    final mentionCounts = mentionSnap.data ?? const {};
-                    return _ChannelList(
-                      server: server,
-                      channels: channels,
-                      mentionCounts: mentionCounts,
-                      canManageChannels: canManageChannels,
-                      isAdmin: isAdmin,
-                      onAddText: canManageChannels
-                          ? () => _showAddChannelDialog(
-                              context, server.id, 'text')
-                          : null,
-                      onAddVoice: canManageChannels
-                          ? () => _showAddChannelDialog(
-                              context, server.id, 'voice')
-                          : null,
-                    );
-                  },
+                return _ChannelList(
+                  server: server,
+                  channels: channels,
+                  channelReads: channelReads,
+                  canManageChannels: canManageChannels,
+                  isAdmin: isAdmin,
+                  onAddText: canManageChannels
+                      ? () => _showAddChannelDialog(
+                          context, server.id, 'text')
+                      : null,
+                  onAddVoice: canManageChannels
+                      ? () => _showAddChannelDialog(
+                          context, server.id, 'voice')
+                      : null,
                 );
               },
             ),
@@ -184,6 +219,7 @@ class _ServerContent extends StatelessWidget {
       BuildContext context, String serverId, String type) {
     final controller = TextEditingController();
     String subtype = 'chat';
+    String? pickedIcon;
 
     showDialog(
       context: context,
@@ -194,49 +230,76 @@ class _ServerContent extends StatelessWidget {
             type == 'text' ? 'Tạo kênh văn bản' : 'Tạo kênh thoại',
             style: const TextStyle(color: AppColors.textPrimary),
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('TÊN KÊNH',
-                  style: TextStyle(
-                      color: AppColors.textMuted,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700)),
-              const SizedBox(height: 8),
-              TextField(
-                controller: controller,
-                autofocus: true,
-                style: const TextStyle(color: AppColors.textPrimary),
-                decoration:
-                    const InputDecoration(hintText: 'tên-kênh'),
-              ),
-              if (type == 'text') ...[
-                const SizedBox(height: 16),
-                const Text('LOẠI KÊNH',
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('ICON',
                     style: TextStyle(
                         color: AppColors.textMuted,
                         fontSize: 11,
                         fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
-                _RadioOption(
-                  label: 'Chat',
-                  subtitle: 'Chat tự do không có chủ đề',
-                  value: 'chat',
-                  groupValue: subtype,
-                  onChanged: (v) =>
-                      setDialogState(() => subtype = v),
+                _IconButton(
+                  icon: pickedIcon,
+                  fallback: type == 'voice'
+                      ? Icons.volume_up_rounded
+                      : (subtype == 'library'
+                          ? Icons.menu_book_rounded
+                          : Icons.tag),
+                  onTap: () async {
+                    final result = await showChannelIconPicker(
+                      ctx,
+                      currentIcon: pickedIcon,
+                    );
+                    if (result == null) return;
+                    setDialogState(() {
+                      pickedIcon = result.isEmpty ? null : result;
+                    });
+                  },
                 ),
-                _RadioOption(
-                  label: 'Library',
-                  subtitle: 'Bài đăng theo chủ đề (forum)',
-                  value: 'library',
-                  groupValue: subtype,
-                  onChanged: (v) =>
-                      setDialogState(() => subtype = v),
+                const SizedBox(height: 16),
+                const Text('TÊN KÊNH',
+                    style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  style: const TextStyle(color: AppColors.textPrimary),
+                  decoration:
+                      const InputDecoration(hintText: 'tên-kênh'),
                 ),
+                if (type == 'text') ...[
+                  const SizedBox(height: 16),
+                  const Text('LOẠI KÊNH',
+                      style: TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
+                  _RadioOption(
+                    label: 'Chat',
+                    subtitle: 'Chat tự do không có chủ đề',
+                    value: 'chat',
+                    groupValue: subtype,
+                    onChanged: (v) =>
+                        setDialogState(() => subtype = v),
+                  ),
+                  _RadioOption(
+                    label: 'Library',
+                    subtitle: 'Bài đăng theo chủ đề (forum)',
+                    value: 'library',
+                    groupValue: subtype,
+                    onChanged: (v) =>
+                        setDialogState(() => subtype = v),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
           actions: [
             TextButton(
@@ -257,9 +320,54 @@ class _ServerContent extends StatelessWidget {
                   name: name,
                   type: type,
                   subtype: type == 'text' ? subtype : 'chat',
+                  icon: pickedIcon,
                 );
               },
               child: const Text('Tạo'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Search Bar ───────────────────────────────────────────────────────────────
+
+class _SearchBar extends StatelessWidget {
+  final Server server;
+  const _SearchBar({required this.server});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ServerSearchPage(server: server),
+        ),
+      ),
+      child: Container(
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.search,
+                color: AppColors.textMuted, size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Tìm kiếm trong ${server.name}',
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 13,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
@@ -273,7 +381,7 @@ class _ServerContent extends StatelessWidget {
 class _ChannelList extends StatelessWidget {
   final Server server;
   final List<ServerChannel> channels;
-  final Map<String, int> mentionCounts;
+  final Map<String, int> channelReads;
   final bool canManageChannels;
   final bool isAdmin;
   final VoidCallback? onAddText;
@@ -282,12 +390,19 @@ class _ChannelList extends StatelessWidget {
   const _ChannelList({
     required this.server,
     required this.channels,
-    required this.mentionCounts,
+    required this.channelReads,
     required this.canManageChannels,
     required this.isAdmin,
     this.onAddText,
     this.onAddVoice,
   });
+
+  int _unreadFor(ServerChannel channel) {
+    final read = channelReads[channel.id];
+    if (read == null) return 0; // chưa có dữ liệu đọc → không hiển thị badge
+    final diff = channel.messageCount - read;
+    return diff <= 0 ? 0 : diff;
+  }
 
   void _openChannel(BuildContext context, ServerChannel ch) {
     Navigator.push(
@@ -323,40 +438,94 @@ class _ChannelList extends StatelessWidget {
     await ServerService().reorderChannels(server.id, orderedIds);
   }
 
-  Future<void> _renameChannel(
+  Future<void> _editChannel(
       BuildContext context, ServerChannel ch) async {
     final controller = TextEditingController(text: ch.name);
-    final newName = await showDialog<String>(
+    String? pickedIcon = ch.icon;
+
+    final result = await showDialog<_EditChannelResult>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.channelSidebar,
-        title: const Text('Đổi tên kênh',
-            style: TextStyle(color: AppColors.textPrimary)),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          style: const TextStyle(color: AppColors.textPrimary),
-          decoration: const InputDecoration(hintText: 'Tên kênh'),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: AppColors.channelSidebar,
+          title: const Text('Sửa kênh',
+              style: TextStyle(color: AppColors.textPrimary)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('ICON',
+                    style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+                _IconButton(
+                  icon: pickedIcon,
+                  fallback: ch.isVoice
+                      ? Icons.volume_up_rounded
+                      : (ch.isLibrary
+                          ? Icons.menu_book_rounded
+                          : Icons.tag),
+                  onTap: () async {
+                    final picked = await showChannelIconPicker(
+                      ctx,
+                      currentIcon: pickedIcon,
+                    );
+                    if (picked == null) return;
+                    setDialogState(() {
+                      pickedIcon = picked.isEmpty ? null : picked;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                const Text('TÊN KÊNH',
+                    style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  style: const TextStyle(color: AppColors.textPrimary),
+                  decoration: const InputDecoration(hintText: 'Tên kênh'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Huỷ',
+                  style: TextStyle(color: AppColors.textMuted)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.accent,
+                  foregroundColor: Colors.white),
+              onPressed: () => Navigator.pop(
+                ctx,
+                _EditChannelResult(
+                  name: controller.text.trim(),
+                  icon: pickedIcon,
+                ),
+              ),
+              child: const Text('Lưu'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Huỷ',
-                style: TextStyle(color: AppColors.textMuted)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accent,
-                foregroundColor: Colors.white),
-            onPressed: () =>
-                Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('Lưu'),
-          ),
-        ],
       ),
     );
-    if (newName == null || newName.isEmpty || newName == ch.name) return;
-    await ServerService().renameChannel(server.id, ch.id, newName);
+    if (result == null) return;
+    final newName = result.name;
+    if (newName.isNotEmpty && newName != ch.name) {
+      await ServerService().renameChannel(server.id, ch.id, newName);
+    }
+    if (result.icon != ch.icon) {
+      await ServerService().setChannelIcon(server.id, ch.id, result.icon);
+    }
   }
 
   Future<void> _deleteChannel(
@@ -409,9 +578,9 @@ class _ChannelList extends StatelessWidget {
             channel: ch,
             index: i,
             isAdmin: isAdmin,
-            mentionCount: mentionCounts[ch.id] ?? 0,
+            unreadCount: _unreadFor(ch),
             onTap: () => _openChannel(context, ch),
-            onRename: () => _renameChannel(context, ch),
+            onEdit: () => _editChannel(context, ch),
             onDelete: () => _deleteChannel(context, ch),
           );
         },
@@ -422,7 +591,7 @@ class _ChannelList extends StatelessWidget {
           .map((ch) => _ChannelTile(
                 serverId: server.id,
                 channel: ch,
-                mentionCount: mentionCounts[ch.id] ?? 0,
+                unreadCount: _unreadFor(ch),
                 onTap: () => _openChannel(context, ch),
               ))
           .toList(),
@@ -454,14 +623,20 @@ class _ChannelList extends StatelessWidget {
   }
 }
 
+class _EditChannelResult {
+  final String name;
+  final String? icon;
+  const _EditChannelResult({required this.name, required this.icon});
+}
+
 class _ManageableChannelTile extends StatelessWidget {
   final String serverId;
   final ServerChannel channel;
   final int index;
   final bool isAdmin;
-  final int mentionCount;
+  final int unreadCount;
   final VoidCallback onTap;
-  final VoidCallback onRename;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _ManageableChannelTile({
@@ -470,13 +645,13 @@ class _ManageableChannelTile extends StatelessWidget {
     required this.channel,
     required this.index,
     required this.isAdmin,
-    required this.mentionCount,
+    required this.unreadCount,
     required this.onTap,
-    required this.onRename,
+    required this.onEdit,
     required this.onDelete,
   });
 
-  IconData get _icon {
+  IconData get _fallbackIcon {
     if (channel.isVoice) return Icons.volume_up_rounded;
     if (channel.isLibrary) return Icons.menu_book_rounded;
     return Icons.tag;
@@ -484,7 +659,7 @@ class _ManageableChannelTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasMentions = mentionCount > 0;
+    final hasUnread = unreadCount > 0;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
       child: Material(
@@ -506,20 +681,23 @@ class _ManageableChannelTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 2),
-                Icon(_icon,
-                    color: hasMentions
-                        ? AppColors.textPrimary
-                        : AppColors.textMuted,
-                    size: 18),
+                ChannelIcon(
+                  customIcon: channel.icon,
+                  fallbackIcon: _fallbackIcon,
+                  color: hasUnread
+                      ? AppColors.textPrimary
+                      : AppColors.textMuted,
+                  size: 18,
+                ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     channel.name,
                     style: TextStyle(
-                        color: hasMentions
+                        color: hasUnread
                             ? AppColors.textPrimary
                             : AppColors.textMuted,
-                        fontWeight: hasMentions
+                        fontWeight: hasUnread
                             ? FontWeight.w700
                             : FontWeight.normal,
                         fontSize: 15),
@@ -530,8 +708,8 @@ class _ManageableChannelTile extends StatelessWidget {
                   _VoiceCountChip(serverId: serverId, channelId: channel.id),
                   const SizedBox(width: 4),
                 ],
-                if (hasMentions) ...[
-                  _MentionBadge(count: mentionCount),
+                if (hasUnread) ...[
+                  _UnreadBadge(count: unreadCount),
                   const SizedBox(width: 4),
                 ],
                 if (isAdmin)
@@ -544,18 +722,18 @@ class _ManageableChannelTile extends StatelessWidget {
                       padding: EdgeInsets.zero,
                       color: AppColors.channelSidebar,
                       onSelected: (v) {
-                        if (v == 'rename') onRename();
+                        if (v == 'edit') onEdit();
                         if (v == 'delete') onDelete();
                       },
                       itemBuilder: (_) => const [
                         PopupMenuItem(
-                          value: 'rename',
+                          value: 'edit',
                           child: Row(
                             children: [
                               Icon(Icons.edit,
                                   color: AppColors.textPrimary, size: 16),
                               SizedBox(width: 8),
-                              Text('Đổi tên',
+                              Text('Sửa kênh',
                                   style: TextStyle(
                                       color: AppColors.textPrimary)),
                             ],
@@ -631,13 +809,13 @@ class _ChannelGroupHeader extends StatelessWidget {
 class _ChannelTile extends StatefulWidget {
   final String serverId;
   final ServerChannel channel;
-  final int mentionCount;
+  final int unreadCount;
   final VoidCallback onTap;
 
   const _ChannelTile({
     required this.serverId,
     required this.channel,
-    required this.mentionCount,
+    required this.unreadCount,
     required this.onTap,
   });
 
@@ -648,7 +826,7 @@ class _ChannelTile extends StatefulWidget {
 class _ChannelTileState extends State<_ChannelTile> {
   bool _hovered = false;
 
-  IconData get _icon {
+  IconData get _fallbackIcon {
     if (widget.channel.isVoice) return Icons.volume_up_rounded;
     if (widget.channel.isLibrary) return Icons.menu_book_rounded;
     return Icons.tag;
@@ -656,7 +834,7 @@ class _ChannelTileState extends State<_ChannelTile> {
 
   @override
   Widget build(BuildContext context) {
-    final hasMentions = widget.mentionCount > 0;
+    final hasUnread = widget.unreadCount > 0;
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
@@ -673,21 +851,24 @@ class _ChannelTileState extends State<_ChannelTile> {
           ),
           child: Row(
             children: [
-              Icon(_icon,
-                  color: hasMentions
-                      ? AppColors.textPrimary
-                      : AppColors.textMuted,
-                  size: 18),
+              ChannelIcon(
+                customIcon: widget.channel.icon,
+                fallbackIcon: _fallbackIcon,
+                color: hasUnread
+                    ? AppColors.textPrimary
+                    : AppColors.textMuted,
+                size: 18,
+              ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   widget.channel.name,
                   style: TextStyle(
-                    color: hasMentions
+                    color: hasUnread
                         ? AppColors.textPrimary
                         : AppColors.textMuted,
                     fontWeight:
-                        hasMentions ? FontWeight.w700 : FontWeight.normal,
+                        hasUnread ? FontWeight.w700 : FontWeight.normal,
                     fontSize: 15,
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -697,7 +878,7 @@ class _ChannelTileState extends State<_ChannelTile> {
                 _VoiceCountChip(
                     serverId: widget.serverId,
                     channelId: widget.channel.id),
-              if (hasMentions) _MentionBadge(count: widget.mentionCount),
+              if (hasUnread) _UnreadBadge(count: widget.unreadCount),
             ],
           ),
         ),
@@ -747,12 +928,12 @@ class _VoiceCountChip extends StatelessWidget {
   }
 }
 
-// ─── Mention Badge ────────────────────────────────────────────────────────────
+// ─── Unread Badge ────────────────────────────────────────────────────────────
 
-class _MentionBadge extends StatelessWidget {
+class _UnreadBadge extends StatelessWidget {
   final int count;
 
-  const _MentionBadge({required this.count});
+  const _UnreadBadge({required this.count});
 
   @override
   Widget build(BuildContext context) {
@@ -774,6 +955,40 @@ class _MentionBadge extends StatelessWidget {
           fontWeight: FontWeight.w700,
           height: 1.0,
         ),
+      ),
+    );
+  }
+}
+
+// ─── Icon picker button (used in create/edit dialogs) ────────────────────────
+
+class _IconButton extends StatelessWidget {
+  final String? icon;
+  final IconData fallback;
+  final VoidCallback onTap;
+
+  const _IconButton({
+    required this.icon,
+    required this.fallback,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.divider, width: 1),
+        ),
+        alignment: Alignment.center,
+        child: icon != null && icon!.isNotEmpty
+            ? Text(icon!, style: const TextStyle(fontSize: 26))
+            : Icon(fallback, color: AppColors.textMuted, size: 24),
       ),
     );
   }

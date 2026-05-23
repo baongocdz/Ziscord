@@ -5,7 +5,9 @@
       "Bash(flutter pub *)",
       "PowerShell($adb = \\(Get-Command adb -ErrorAction SilentlyContinue\\).Source; if \\($adb\\) { Write-Output \"ADB: $adb\"; adb version } else { Write-Output \"ADB chưa có trong PATH\" })",
       "PowerShell(flutter devices 2>&1)",
-      "PowerShell(& \"C:\\\\Users\\\\ADMIN\\\\AppData\\\\Local\\\\Android\\\\sdk\\\\platform-tools\\\\adb.exe\" devices)"
+      "PowerShell(& \"C:\\\\Users\\\\ADMIN\\\\AppData\\\\Local\\\\Android\\\\sdk\\\\platform-tools\\\\adb.exe\" devices)",
+      "Bash(cat \"/c/Users/ADMIN/AppData/Local/Pub/Cache/hosted/pub.dev/agora_rtc_engine-6.6.3/example/web/index.html\" 2>&1 | head -60)",
+      "Read(//c/Users/ADMIN/AppData/Local/Pub/Cache/hosted/pub.dev/agora_rtc_engine-6.6.3/example/web/**)"
     ]
   }
 }

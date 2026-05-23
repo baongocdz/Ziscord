@@ -18,9 +18,11 @@ class VoiceService {
   String? _currentChannelId;
   String? _currentUid;
   bool _isMuted = false;
+  bool _listenOnly = false;
   final Set<int> _remoteAgoraUids = {};
 
   bool get isMuted => _isMuted;
+  bool get isListenOnly => _listenOnly;
 
   CollectionReference _voiceMembers(String sid, String cid) => _db
       .collection('servers')
@@ -71,12 +73,22 @@ class VoiceService {
     _currentServerId = serverId;
     _currentChannelId = channelId;
     _currentUid = uid;
+    _listenOnly = false;
 
     final engine = createAgoraRtcEngine();
     _engine = engine;
     await engine.initialize(const RtcEngineContext(appId: AgoraConfig.appId));
     await engine.setChannelProfile(ChannelProfileType.channelProfileCommunication);
-    await engine.enableAudio();
+
+    // Try to enable mic capture. If the device has no microphone (NotFoundError)
+    // or the user blocked the permission, fall back to listen-only mode so the
+    // user can still hear others speak. The page reads `isListenOnly` after
+    // join to show a non-blocking banner.
+    try {
+      await engine.enableAudio();
+    } catch (_) {
+      _listenOnly = true;
+    }
     await engine.disableVideo();
 
     engine.registerEventHandler(RtcEngineEventHandler(
@@ -102,16 +114,19 @@ class VoiceService {
       token: '',
       channelId: AgoraConfig.channelName(serverId, channelId),
       uid: agoraUid,
-      options: const ChannelMediaOptions(
+      options: ChannelMediaOptions(
         clientRoleType: ClientRoleType.clientRoleBroadcaster,
         channelProfile: ChannelProfileType.channelProfileCommunication,
+        publishMicrophoneTrack: !_listenOnly,
+        autoSubscribeAudio: true,
       ),
     );
 
     await _voiceMembers(serverId, channelId).doc(uid).set({
       'displayName': displayName,
       'photoURL': photoURL,
-      'isMuted': false,
+      'isMuted': _listenOnly,
+      'isListenOnly': _listenOnly,
       'joinedAt': FieldValue.serverTimestamp(),
     });
   }

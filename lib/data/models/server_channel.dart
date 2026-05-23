@@ -6,6 +6,8 @@ class ServerChannel {
   final String type; // 'text' | 'voice'
   final String subtype; // 'chat' | 'library' (chỉ áp dụng cho text)
   final int position;
+  final String? icon; // emoji string, null = dùng icon mặc định theo type
+  final int messageCount; // dùng để tính số tin chưa đọc
 
   ServerChannel({
     required this.id,
@@ -13,6 +15,8 @@ class ServerChannel {
     required this.type,
     required this.subtype,
     required this.position,
+    this.icon,
+    this.messageCount = 0,
   });
 
   bool get isText => type == 'text';
@@ -21,12 +25,15 @@ class ServerChannel {
   bool get isChat => type == 'text' && subtype == 'chat';
 
   factory ServerChannel.fromMap(Map<String, dynamic> map, String id) {
+    final rawIcon = map['icon'] as String?;
     return ServerChannel(
       id: id,
       name: map['name'] ?? '',
       type: map['type'] ?? 'text',
       subtype: map['subtype'] ?? 'chat',
       position: map['position'] ?? 0,
+      icon: (rawIcon == null || rawIcon.isEmpty) ? null : rawIcon,
+      messageCount: (map['messageCount'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -35,6 +42,8 @@ class ServerChannel {
         'type': type,
         'subtype': subtype,
         'position': position,
+        if (icon != null) 'icon': icon,
+        'messageCount': messageCount,
         'createdAt': FieldValue.serverTimestamp(),
       };
 }

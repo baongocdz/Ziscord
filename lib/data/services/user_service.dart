@@ -39,4 +39,13 @@ class UserService {
       'photoURL': url,
     });
   }
+
+  Future<void> updateBanner(String url) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    await users.doc(currentUser.uid).update({
+      'bannerURL': url,
+    });
+  }
 }

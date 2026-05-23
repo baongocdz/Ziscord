@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../data/models/server.dart';
 import '../../data/services/auth_service.dart';
+import '../../data/services/dm_service.dart';
 import '../../data/services/friend_service.dart';
 import '../../data/services/mention_service.dart';
 import '../../data/services/server_service.dart';
@@ -73,12 +74,18 @@ class _MainScaffoldState extends State<MainScaffold> {
           return StreamBuilder<int>(
             stream: MentionService().streamUnreadCount(_currentUid),
             builder: (context, mentionSnap) {
-              final total =
-                  (friendSnap.data ?? 0) + (mentionSnap.data ?? 0);
-              return _BottomNav(
-                currentIndex: _tab,
-                notificationBadge: total,
-                onTap: (i) => setState(() => _tab = i),
+              return StreamBuilder<int>(
+                stream: DMService().streamTotalUnread(_currentUid),
+                builder: (context, dmSnap) {
+                  final total = (friendSnap.data ?? 0) +
+                      (mentionSnap.data ?? 0) +
+                      (dmSnap.data ?? 0);
+                  return _BottomNav(
+                    currentIndex: _tab,
+                    notificationBadge: total,
+                    onTap: (i) => setState(() => _tab = i),
+                  );
+                },
               );
             },
           );

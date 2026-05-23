@@ -4,6 +4,7 @@ class AppUser {
   final String displayName;
   final String nickname;
   final String? photoURL;
+  final String? bannerURL;
 
   AppUser({
     required this.uid,
@@ -11,6 +12,7 @@ class AppUser {
     required this.displayName,
     required this.nickname,
     this.photoURL,
+    this.bannerURL,
   });
 
   factory AppUser.fromMap(Map<String, dynamic> map) {
@@ -20,6 +22,7 @@ class AppUser {
       displayName: map['displayName'] ?? '',
       nickname: map['nickname'] ?? '',
       photoURL: map['photoURL'],
+      bannerURL: map['bannerURL'],
     );
   }
 
@@ -30,6 +33,7 @@ class AppUser {
       'displayName': displayName,
       'nickname': nickname,
       'photoURL': photoURL,
+      'bannerURL': bannerURL,
     };
   }
 }

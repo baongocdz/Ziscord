@@ -21,7 +21,9 @@ class _ProfilePageState extends State<ProfilePage> {
   final _cloudinary = CloudinaryService();
 
   String? _avatarUrl;
+  String? _bannerUrl;
   bool _isLoading = false;
+  bool _isBannerUploading = false;
   bool _isUserLoaded = false;
 
   @override
@@ -45,6 +47,7 @@ class _ProfilePageState extends State<ProfilePage> {
       _displayNameController.text = user?.displayName ?? '';
       _nicknameController.text = user?.nickname ?? '';
       _avatarUrl = user?.photoURL;
+      _bannerUrl = user?.bannerURL;
       _isUserLoaded = true;
     });
   }
@@ -67,6 +70,27 @@ class _ProfilePageState extends State<ProfilePage> {
       _showSnack('Lỗi: $e', isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _pickBanner() async {
+    setState(() => _isBannerUploading = true);
+    try {
+      final (url, error) = await _cloudinary.pickAndUpload();
+      if (error != null) {
+        _showSnack('Lỗi upload: $error', isError: true);
+        return;
+      }
+      if (url == null) return;
+      await _userService.updateBanner(url);
+      if (!mounted) return;
+      setState(() => _bannerUrl = url);
+      _showSnack('Cập nhật ảnh nền thành công');
+    } catch (e) {
+      if (!mounted) return;
+      _showSnack('Lỗi: $e', isError: true);
+    } finally {
+      if (mounted) setState(() => _isBannerUploading = false);
     }
   }
 
@@ -121,10 +145,10 @@ class _ProfilePageState extends State<ProfilePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header banner
-            Container(
-              width: double.infinity,
-              height: 100,
-              color: AppColors.accent,
+            _BannerArea(
+              bannerUrl: _bannerUrl,
+              isLoading: _isBannerUploading,
+              onTap: _isBannerUploading ? null : _pickBanner,
             ),
 
             // Avatar overlapping banner
@@ -143,8 +167,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     const Spacer(),
                     _OutlineButton(
-                      label: 'Chỉnh sửa',
-                      onTap: () {},
+                      label: 'Đổi ảnh nền',
+                      onTap: _isBannerUploading ? null : _pickBanner,
                     ),
                   ],
                 ),
@@ -372,27 +396,89 @@ class _FormRow extends StatelessWidget {
 
 class _OutlineButton extends StatelessWidget {
   final String label;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _OutlineButton({required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
+    final disabled = onTap == null;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          border: Border.all(color: AppColors.divider),
+          border: Border.all(
+              color: disabled
+                  ? AppColors.divider.withValues(alpha: 0.5)
+                  : AppColors.divider),
           borderRadius: BorderRadius.circular(4),
         ),
         child: Text(
           label,
-          style: const TextStyle(
-              color: AppColors.textPrimary,
+          style: TextStyle(
+              color: disabled
+                  ? AppColors.textMuted
+                  : AppColors.textPrimary,
               fontSize: 14,
               fontWeight: FontWeight.w600),
         ),
+      ),
+    );
+  }
+}
+
+class _BannerArea extends StatelessWidget {
+  final String? bannerUrl;
+  final bool isLoading;
+  final VoidCallback? onTap;
+
+  const _BannerArea({
+    required this.bannerUrl,
+    required this.isLoading,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Stack(
+        children: [
+          Container(
+            width: double.infinity,
+            height: 120,
+            decoration: BoxDecoration(
+              color: AppColors.accent,
+              image: bannerUrl != null && bannerUrl!.isNotEmpty
+                  ? DecorationImage(
+                      image: NetworkImage(bannerUrl!),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
+            ),
+          ),
+          Positioned(
+            right: 12,
+            bottom: 12,
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.6),
+                shape: BoxShape.circle,
+              ),
+              child: isLoading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2),
+                    )
+                  : const Icon(Icons.camera_alt,
+                      color: Colors.white, size: 16),
+            ),
+          ),
+        ],
       ),
     );
   }

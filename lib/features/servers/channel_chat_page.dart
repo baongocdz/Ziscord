@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/channel_icon_picker.dart';
 import '../../core/widgets/emoji_picker_sheet.dart';
 import '../../core/widgets/formatted_text.dart';
 import '../../core/widgets/image_preview_strip.dart';
@@ -62,6 +63,8 @@ class _ChannelChatPageState extends State<ChannelChatPage> {
   Future<void> _markMentionsRead() async {
     await _mentionService.markChannelMentionsAsRead(
         _currentUid, widget.server.id, widget.channel.id);
+    await _serverService.markChannelAsRead(
+        widget.server.id, widget.channel.id);
   }
 
   Future<void> _loadMembers() async {
@@ -69,6 +72,9 @@ class _ChannelChatPageState extends State<ChannelChatPage> {
         await _serverService.streamMembersWithNames(widget.server.id).first;
     if (!mounted) return;
     setState(() => _members = members);
+    // Pre-fetch user photos so the mention picker shows avatars immediately
+    // instead of fallback initials (the picker reads `_userCache`).
+    _ensureUsersLoaded(members.map((m) => m.uid));
   }
 
   void _onTextChanged() {
@@ -371,8 +377,9 @@ class _ChannelChatPageState extends State<ChannelChatPage> {
         titleSpacing: 0,
         title: Row(
           children: [
-            Icon(
-              widget.channel.isLibrary
+            ChannelIcon(
+              customIcon: widget.channel.icon,
+              fallbackIcon: widget.channel.isLibrary
                   ? Icons.menu_book_rounded
                   : Icons.tag,
               color: AppColors.textMuted,
