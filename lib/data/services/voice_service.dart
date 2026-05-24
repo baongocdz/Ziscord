@@ -291,10 +291,11 @@ class VoiceService {
           clientRoleType: ClientRoleType.clientRoleBroadcaster,
           channelProfile: ChannelProfileType.channelProfileCommunication,
           publishMicrophoneTrack: !listenOnly,
-          // Always publish if a video track exists. The track only exists
-          // when enableLocalVideo(true) is called, so this is harmless when
-          // camera is off.
-          publishCameraTrack: true,
+          // Start with camera publish OFF — flipped explicitly via
+          // updateChannelMediaOptions when user toggles camera on. Setting
+          // true here while no track exists makes Agora cache a "muted"
+          // signal that doesn't clear when track is created later.
+          publishCameraTrack: false,
           autoSubscribeAudio: true,
           autoSubscribeVideo: true,
         ),
@@ -437,6 +438,29 @@ class VoiceService {
           failure = e;
         }
       }
+      if (failure == null) {
+        // Explicitly flip channel options to publish the camera track. Just
+        // creating the track via enableLocalVideo is NOT enough on Agora Web
+        // SDK — remote clients receive a "video muted" signal until the
+        // publish flag is updated. Always re-pass publishMicrophoneTrack so
+        // updateChannelMediaOptions doesn't accidentally unset it.
+        try {
+          // ignore: avoid_print
+          print('[voice] updateChannelMediaOptions(publishCameraTrack: true)...');
+          await engine.updateChannelMediaOptions(
+            ChannelMediaOptions(
+              publishCameraTrack: true,
+              publishMicrophoneTrack: !_listenOnly,
+            ),
+          );
+        } catch (e) {
+          // ignore: avoid_print
+          print('[voice] updateChannelMediaOptions FAILED (continuing): $e');
+        }
+        try {
+          await engine.muteLocalVideoStream(false);
+        } catch (_) {}
+      }
       if (failure != null) {
         lastCameraFailReason = _classifyCameraError(failure);
         // ignore: avoid_print
@@ -452,6 +476,17 @@ class VoiceService {
       }
       lastCameraFailReason = null;
     } else {
+      try {
+        await engine.updateChannelMediaOptions(
+          ChannelMediaOptions(
+            publishCameraTrack: false,
+            publishMicrophoneTrack: !_listenOnly,
+          ),
+        );
+      } catch (_) {}
+      try {
+        await engine.muteLocalVideoStream(true);
+      } catch (_) {}
       try {
         await engine.stopPreview();
       } catch (_) {}
