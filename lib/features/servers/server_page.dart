@@ -792,7 +792,7 @@ class _ChannelGroupHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 8, 4),
+      padding: const EdgeInsets.fromLTRB(16, 16, 12, 4),
       child: Row(
         children: [
           Icon(Icons.chevron_right,
@@ -810,10 +810,15 @@ class _ChannelGroupHeader extends StatelessWidget {
             ),
           ),
           if (onAdd != null)
-            GestureDetector(
-              onTap: onAdd,
-              child: Icon(Icons.add,
-                  color: AppColors.textMuted, size: 18),
+            SizedBox(
+              width: 28,
+              height: 28,
+              child: InkWell(
+                onTap: onAdd,
+                borderRadius: BorderRadius.circular(4),
+                child: Icon(Icons.add,
+                    color: AppColors.textMuted, size: 16),
+              ),
             ),
         ],
       ),
