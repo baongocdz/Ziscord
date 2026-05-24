@@ -6,6 +6,7 @@ class VoiceMember {
   final String? photoURL;
   final bool isMuted;
   final bool isListenOnly;
+  final bool cameraOn;
   final DateTime joinedAt;
 
   VoiceMember({
@@ -14,6 +15,7 @@ class VoiceMember {
     this.photoURL,
     required this.isMuted,
     this.isListenOnly = false,
+    this.cameraOn = false,
     required this.joinedAt,
   });
 
@@ -25,6 +27,7 @@ class VoiceMember {
       photoURL: map['photoURL'] as String?,
       isMuted: map['isMuted'] == true,
       isListenOnly: map['isListenOnly'] == true,
+      cameraOn: map['cameraOn'] == true,
       joinedAt: raw is Timestamp ? raw.toDate() : DateTime.now(),
     );
   }

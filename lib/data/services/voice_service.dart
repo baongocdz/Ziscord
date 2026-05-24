@@ -26,6 +26,7 @@ class VoiceService {
   int? _localAgoraUid;
   bool _isMuted = false;
   bool _listenOnly = false;
+  bool _cameraOn = false;
   final Set<int> _remoteAgoraUids = {};
 
   /// Current voice session (null = not in any voice channel). UI watches this
@@ -37,6 +38,10 @@ class VoiceService {
   /// can stay in sync without polling.
   final ValueNotifier<bool> mutedNotifier = ValueNotifier<bool>(false);
 
+  /// Whether the local camera is publishing. UI binds to this so the toggle
+  /// button reflects state instantly (Firestore round-trip is too slow).
+  final ValueNotifier<bool> cameraNotifier = ValueNotifier<bool>(false);
+
   /// Set of Agora UIDs currently above the speaking volume threshold. Local
   /// user is mapped to [_localAgoraUid] (Agora reports local as uid=0).
   final ValueNotifier<Set<int>> speakingAgoraUids =
@@ -44,7 +49,22 @@ class VoiceService {
 
   bool get isMuted => _isMuted;
   bool get isListenOnly => _listenOnly;
+  bool get isCameraOn => _cameraOn;
   bool get isInSession => currentSession.value != null;
+
+  /// The active Agora engine, or null if not in a session. UI uses this to
+  /// build [VideoViewController] for AgoraVideoView.
+  RtcEngine? get engine => _engine;
+
+  /// Agora numeric uid for the local user (or null if not in session).
+  int? get localAgoraUid => _localAgoraUid;
+
+  /// Agora channel name for the current session (used by remote video views).
+  String? get currentAgoraChannelName {
+    final s = currentSession.value;
+    if (s == null) return null;
+    return AgoraConfig.channelName(s.serverId, s.channelId);
+  }
 
   CollectionReference _voiceMembers(String sid, String cid) => _db
       .collection('servers')
@@ -171,9 +191,14 @@ class VoiceService {
       } catch (_) {}
     }
 
+    // Enable video module so the user CAN turn the camera on later, but keep
+    // local capture off until they explicitly toggle it.
     try {
-      await engine.disableVideo();
+      await engine.enableVideo();
+      await engine.enableLocalVideo(false);
     } catch (_) {}
+    _cameraOn = false;
+    cameraNotifier.value = false;
 
     engine.registerEventHandler(RtcEngineEventHandler(
       onUserJoined: (conn, remoteUid, elapsed) {
@@ -206,11 +231,7 @@ class VoiceService {
         onConnectionState?.call(state);
       },
       onAudioVolumeIndication: (conn, speakers, speakerNumber, totalVolume) {
-        // print() reaches the browser console on web (debugPrint may not).
-        // ignore: avoid_print
-        print(
-            '[voice] volumeEvent total=$totalVolume count=$speakerNumber raw=${speakers.map((s) => "${s.uid}:${s.volume}").toList()}');
-        const threshold = 1;
+        const threshold = 15;
         final next = <int>{};
         for (final s in speakers) {
           final v = s.volume ?? 0;
@@ -220,8 +241,6 @@ class VoiceService {
         }
         final cur = speakingAgoraUids.value;
         if (next.length != cur.length || !next.containsAll(cur)) {
-          // ignore: avoid_print
-          print('[voice] speaking set → $next');
           speakingAgoraUids.value = next;
         }
       },
@@ -240,7 +259,9 @@ class VoiceService {
           clientRoleType: ClientRoleType.clientRoleBroadcaster,
           channelProfile: ChannelProfileType.channelProfileCommunication,
           publishMicrophoneTrack: !listenOnly,
+          publishCameraTrack: false,
           autoSubscribeAudio: true,
+          autoSubscribeVideo: true,
         ),
       );
     }
@@ -291,18 +312,14 @@ class VoiceService {
         smooth: 3,
         reportVad: false,
       );
-      // ignore: avoid_print
-      print('[voice] enableAudioVolumeIndication OK');
-    } catch (e) {
-      // ignore: avoid_print
-      print('[voice] enableAudioVolumeIndication FAILED: $e');
-    }
+    } catch (_) {}
 
     await _voiceMembers(serverId, channelId).doc(uid).set({
       'displayName': displayName,
       'photoURL': photoURL,
       'isMuted': _listenOnly,
       'isListenOnly': _listenOnly,
+      'cameraOn': false,
       'joinedAt': FieldValue.serverTimestamp(),
     });
 
@@ -330,6 +347,57 @@ class VoiceService {
     }
   }
 
+  /// Turn camera on/off. On web this triggers the browser's camera prompt the
+  /// first time. Returns true on success, false if camera unavailable / denied.
+  Future<bool> setCamera(bool on) async {
+    final engine = _engine;
+    if (engine == null) return false;
+    if (on == _cameraOn) return true;
+
+    if (on) {
+      try {
+        await engine.enableLocalVideo(true);
+        await engine.startPreview();
+        await engine.updateChannelMediaOptions(
+            const ChannelMediaOptions(publishCameraTrack: true));
+      } catch (e) {
+        debugPrint('[voice] setCamera(true) FAILED: $e');
+        // Best-effort rollback so we don't leak a half-enabled state.
+        try {
+          await engine.enableLocalVideo(false);
+        } catch (_) {}
+        try {
+          await engine.stopPreview();
+        } catch (_) {}
+        return false;
+      }
+    } else {
+      try {
+        await engine.updateChannelMediaOptions(
+            const ChannelMediaOptions(publishCameraTrack: false));
+      } catch (_) {}
+      try {
+        await engine.stopPreview();
+      } catch (_) {}
+      try {
+        await engine.enableLocalVideo(false);
+      } catch (_) {}
+    }
+
+    _cameraOn = on;
+    cameraNotifier.value = on;
+
+    final sid = _currentServerId;
+    final cid = _currentChannelId;
+    final uid = _currentUid;
+    if (sid != null && cid != null && uid != null) {
+      await _voiceMembers(sid, cid)
+          .doc(uid)
+          .update({'cameraOn': on}).catchError((_) {});
+    }
+    return true;
+  }
+
   /// Leaves the channel, removes Firestore presence, and releases the engine.
   /// Safe to call multiple times.
   Future<void> leave() async {
@@ -345,9 +413,11 @@ class VoiceService {
     _localAgoraUid = null;
     _isMuted = false;
     _listenOnly = false;
+    _cameraOn = false;
     _remoteAgoraUids.clear();
     speakingAgoraUids.value = const <int>{};
     mutedNotifier.value = false;
+    cameraNotifier.value = false;
     currentSession.value = null;
 
     if (sid != null && cid != null && uid != null) {

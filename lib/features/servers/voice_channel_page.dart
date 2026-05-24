@@ -87,6 +87,22 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
     setState(() {});
   }
 
+  Future<void> _toggleCamera() async {
+    final wantOn = !_voiceService.isCameraOn;
+    final ok = await _voiceService.setCamera(wantOn);
+    if (!mounted) return;
+    if (wantOn && !ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Không bật được camera. Máy không có webcam hoặc bị chặn quyền.'),
+          backgroundColor: AppColors.danger,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
   /// Leave voice AND pop the page. Bound to the red phone button.
   Future<void> _leaveAndPop() async {
     final navigator = Navigator.of(context);
@@ -283,7 +299,13 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
                 final agoraUid = VoiceService.agoraUidFor(m.uid);
                 final isSpeaking =
                     inThis && speakingSet.contains(agoraUid) && !m.isMuted;
-                return _VoiceTile(member: m, isSpeaking: isSpeaking);
+                final isLocal = m.uid == AuthService().currentUser?.uid;
+                return _VoiceTile(
+                  key: ValueKey('${m.uid}-${m.cameraOn}'),
+                  member: m,
+                  isSpeaking: isSpeaking,
+                  isLocal: isLocal,
+                );
               },
             );
           },
@@ -324,27 +346,40 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       color: AppColors.channelSidebar,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _circleBtn(
-            icon: micOff ? Icons.mic_off : Icons.mic,
-            color: micOff ? AppColors.danger : AppColors.textPrimary,
-            bg: AppColors.background,
-            onTap: listenOnly ? null : _toggleMute,
-            tooltip: listenOnly
-                ? 'Không có micro — chế độ chỉ nghe'
-                : (muted ? 'Bật micro' : 'Tắt micro'),
-          ),
-          const SizedBox(width: 24),
-          _circleBtn(
-            icon: Icons.call_end,
-            color: Colors.white,
-            bg: AppColors.danger,
-            onTap: _leaveAndPop,
-            tooltip: 'Rời kênh',
-          ),
-        ],
+      child: ValueListenableBuilder<bool>(
+        valueListenable: _voiceService.cameraNotifier,
+        builder: (context, cameraOn, _) {
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _circleBtn(
+                icon: micOff ? Icons.mic_off : Icons.mic,
+                color: micOff ? AppColors.danger : AppColors.textPrimary,
+                bg: AppColors.background,
+                onTap: listenOnly ? null : _toggleMute,
+                tooltip: listenOnly
+                    ? 'Không có micro — chế độ chỉ nghe'
+                    : (muted ? 'Bật micro' : 'Tắt micro'),
+              ),
+              const SizedBox(width: 16),
+              _circleBtn(
+                icon: cameraOn ? Icons.videocam : Icons.videocam_off,
+                color: cameraOn ? AppColors.textPrimary : AppColors.textMuted,
+                bg: AppColors.background,
+                onTap: _toggleCamera,
+                tooltip: cameraOn ? 'Tắt camera' : 'Bật camera',
+              ),
+              const SizedBox(width: 16),
+              _circleBtn(
+                icon: Icons.call_end,
+                color: Colors.white,
+                bg: AppColors.danger,
+                onTap: _leaveAndPop,
+                tooltip: 'Rời kênh',
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -403,75 +438,181 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
   }
 }
 
-class _VoiceTile extends StatelessWidget {
+class _VoiceTile extends StatefulWidget {
   final VoiceMember member;
   final bool isSpeaking;
-  const _VoiceTile({required this.member, required this.isSpeaking});
+  final bool isLocal;
+  const _VoiceTile({
+    super.key,
+    required this.member,
+    required this.isSpeaking,
+    required this.isLocal,
+  });
+
+  @override
+  State<_VoiceTile> createState() => _VoiceTileState();
+}
+
+class _VoiceTileState extends State<_VoiceTile> {
+  VideoViewController? _videoController;
+
+  @override
+  void initState() {
+    super.initState();
+    _maybeBuildController();
+  }
+
+  @override
+  void didUpdateWidget(covariant _VoiceTile old) {
+    super.didUpdateWidget(old);
+    if (old.member.cameraOn != widget.member.cameraOn ||
+        old.isLocal != widget.isLocal) {
+      _disposeController();
+      _maybeBuildController();
+    }
+  }
+
+  void _maybeBuildController() {
+    if (!widget.member.cameraOn) return;
+    final voice = VoiceService();
+    final engine = voice.engine;
+    final channel = voice.currentAgoraChannelName;
+    if (engine == null || channel == null) return;
+
+    if (widget.isLocal) {
+      _videoController = VideoViewController(
+        rtcEngine: engine,
+        canvas: const VideoCanvas(uid: 0),
+      );
+    } else {
+      final agoraUid = VoiceService.agoraUidFor(widget.member.uid);
+      _videoController = VideoViewController.remote(
+        rtcEngine: engine,
+        canvas: VideoCanvas(uid: agoraUid),
+        connection: RtcConnection(channelId: channel),
+      );
+    }
+  }
+
+  void _disposeController() {
+    final c = _videoController;
+    _videoController = null;
+    c?.dispose();
+  }
+
+  @override
+  void dispose() {
+    _disposeController();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final m = widget.member;
+    final showVideo = m.cameraOn && _videoController != null;
     return Container(
       decoration: BoxDecoration(
         color: AppColors.channelSidebar,
         borderRadius: BorderRadius.circular(12),
       ),
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
         children: [
-          Stack(
-            children: [
-              AnimatedContainer(
+          if (showVideo)
+            Positioned.fill(
+              child: AnimatedContainer(
                 duration: const Duration(milliseconds: 120),
-                padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
                   border: Border.all(
-                    color: isSpeaking ? _speakingGreen : Colors.transparent,
+                    color: widget.isSpeaking
+                        ? _speakingGreen
+                        : Colors.transparent,
                     width: 3,
                   ),
-                  boxShadow: isSpeaking
-                      ? [
-                          BoxShadow(
-                            color: _speakingGreen.withValues(alpha: 0.45),
-                            blurRadius: 10,
-                            spreadRadius: 1,
-                          ),
-                        ]
-                      : null,
                 ),
-                child: UserAvatar(
-                    name: member.displayName,
-                    photoURL: member.photoURL,
-                    radius: 36),
+                child: AgoraVideoView(controller: _videoController!),
               ),
-              if (member.isMuted)
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: AppColors.danger,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                          color: AppColors.channelSidebar, width: 2),
+            )
+          else
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 120),
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: widget.isSpeaking
+                              ? _speakingGreen
+                              : Colors.transparent,
+                          width: 3,
+                        ),
+                        boxShadow: widget.isSpeaking
+                            ? [
+                                BoxShadow(
+                                  color:
+                                      _speakingGreen.withValues(alpha: 0.45),
+                                  blurRadius: 10,
+                                  spreadRadius: 1,
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: UserAvatar(
+                          name: m.displayName,
+                          photoURL: m.photoURL,
+                          radius: 36),
                     ),
-                    child: const Icon(Icons.mic_off,
-                        color: Colors.white, size: 12),
-                  ),
+                  ],
                 ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            member.displayName,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w600,
-                fontSize: 13),
+              ),
+            ),
+          // Name strip at bottom
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                gradient: showVideo
+                    ? LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.7),
+                          Colors.transparent,
+                        ],
+                      )
+                    : null,
+              ),
+              child: Row(
+                children: [
+                  if (m.isMuted) ...[
+                    const Icon(Icons.mic_off,
+                        color: AppColors.danger, size: 14),
+                    const SizedBox(width: 4),
+                  ],
+                  Expanded(
+                    child: Text(
+                      m.displayName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
