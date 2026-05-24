@@ -20,18 +20,18 @@ class FriendService {
 
     if (await isFriend(fromUid, toUid)) return 'Đã là bạn bè';
 
-    // Cho phép gửi lại nếu request cũ đã bị reject; chặn nếu còn pending/accepted
+    // Tới đây nghĩa là 2 user KHÔNG còn là bạn (vừa unfriend hoặc chưa từng kết bạn).
+    // Dọn mọi request cũ giữa 2 user (kể cả 'accepted' sót lại) — chỉ chặn nếu vẫn còn 'pending'.
     final existing = await friendRequests
         .where('from', isEqualTo: fromUid)
         .where('to', isEqualTo: toUid)
         .get();
     for (final doc in existing.docs) {
       final status = (doc.data() as Map<String, dynamic>)['status'];
-      if (status == 'rejected') {
-        await doc.reference.delete();
-      } else {
+      if (status == 'pending') {
         return 'Đã gửi request trước đó';
       }
+      await doc.reference.delete();
     }
 
     await friendRequests.add({
@@ -90,11 +90,10 @@ class FriendService {
         .get();
     for (final doc in existing.docs) {
       final status = (doc.data() as Map<String, dynamic>)['status'];
-      if (status == 'rejected') {
-        await doc.reference.delete();
-      } else {
+      if (status == 'pending') {
         return 'Đã gửi request trước đó';
       }
+      await doc.reference.delete();
     }
     await friendRequests.add({
       'from': fromUid,

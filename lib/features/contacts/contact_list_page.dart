@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/user_avatar.dart';
 import '../../core/widgets/user_profile_sheet.dart';
 import '../../data/models/friend.dart';
 import '../../data/models/friend_request.dart';
@@ -287,16 +288,10 @@ class _FriendTile extends StatelessWidget {
         userId: friend.uid,
         userName: friend.displayName,
       ),
-      leading: CircleAvatar(
+      leading: UserAvatar(
+        name: friend.displayName,
+        photoURL: friend.photoURL,
         radius: 20,
-        backgroundColor: AppColors.accent,
-        child: Text(
-          friend.displayName.isNotEmpty
-              ? friend.displayName[0].toUpperCase()
-              : '?',
-          style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.w700),
-        ),
       ),
       title: Text(friend.displayName,
           style: TextStyle(
@@ -404,18 +399,15 @@ class _RequestTile extends StatelessWidget {
         final displayName =
             snapshot.data?.displayName ?? request.fromUid;
         final nickname = snapshot.data?.nickname ?? '';
+        final photoURL = snapshot.data?.photoURL;
 
         return ListTile(
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          leading: CircleAvatar(
+          leading: UserAvatar(
+            name: displayName,
+            photoURL: photoURL,
             radius: 20,
-            backgroundColor: AppColors.accent,
-            child: Text(
-              displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
-              style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.w700),
-            ),
           ),
           title: Text(
             displayName,
