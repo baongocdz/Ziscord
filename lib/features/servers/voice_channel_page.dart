@@ -92,12 +92,22 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
     final ok = await _voiceService.setCamera(wantOn);
     if (!mounted) return;
     if (wantOn && !ok) {
+      final reason = _voiceService.lastCameraFailReason;
+      final msg = switch (reason) {
+        CameraFailReason.inUseByOtherApp =>
+          'Camera đang bị app khác chiếm (Zoom, OBS, tab Chrome khác…). Đóng app đó rồi thử lại.',
+        CameraFailReason.permissionDenied =>
+          'Quyền camera đã bị chặn. Mở Settings của browser → cho phép camera cho site này → thử lại.',
+        CameraFailReason.noCamera =>
+          'Máy không có webcam.',
+        _ =>
+          'Không bật được camera. Thử đóng các app/tab khác đang dùng camera.',
+      };
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-              'Không bật được camera. Máy không có webcam hoặc bị chặn quyền.'),
+        SnackBar(
+          content: Text(msg),
           backgroundColor: AppColors.danger,
-          duration: Duration(seconds: 3),
+          duration: const Duration(seconds: 4),
         ),
       );
     }

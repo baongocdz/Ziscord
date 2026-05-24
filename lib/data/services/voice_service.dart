@@ -7,6 +7,21 @@ import '../../core/constants/agora_config.dart';
 import '../models/voice_member.dart';
 import '../models/voice_session.dart';
 
+/// Why [VoiceService.setCamera] failed when it returns false.
+enum CameraFailReason {
+  /// Camera grabbed by another app/tab (Zoom, OBS, another browser tab).
+  inUseByOtherApp,
+
+  /// Browser/OS permission denied.
+  permissionDenied,
+
+  /// No camera device on the machine.
+  noCamera,
+
+  /// Anything else.
+  unknown,
+}
+
 /// App-wide singleton that owns the Agora engine and Firestore voice presence.
 ///
 /// Singleton because voice persists across navigation: the user can leave the
@@ -350,39 +365,75 @@ class VoiceService {
     }
   }
 
+  /// Categorized failure reason from [setCamera]. UI uses this to show an
+  /// actionable error message instead of a generic "failed".
+  static CameraFailReason _classifyCameraError(Object e) {
+    final s = e.toString().toLowerCase();
+    if (s.contains('notreadableerror') ||
+        s.contains('could not start video source') ||
+        s.contains('in use')) {
+      return CameraFailReason.inUseByOtherApp;
+    }
+    if (s.contains('notallowederror') || s.contains('permission')) {
+      return CameraFailReason.permissionDenied;
+    }
+    if (s.contains('notfounderror') || s.contains('device not found')) {
+      return CameraFailReason.noCamera;
+    }
+    return CameraFailReason.unknown;
+  }
+
+  CameraFailReason? lastCameraFailReason;
+
   /// Turn camera on/off. On web this triggers the browser's camera prompt the
-  /// first time. Returns true on success, false if camera unavailable / denied.
+  /// first time. Returns true on success, false if camera unavailable / denied
+  /// — caller can read [lastCameraFailReason] for the specific cause.
   Future<bool> setCamera(bool on) async {
-    debugPrint('[voice] setCamera($on) — current=$_cameraOn');
+    // ignore: avoid_print
+    print('[voice] setCamera($on) called, current=$_cameraOn');
     final engine = _engine;
     if (engine == null) {
       // ignore: avoid_print
       print('[voice] setCamera: no engine');
+      lastCameraFailReason = CameraFailReason.unknown;
       return false;
     }
     if (on == _cameraOn) return true;
 
     if (on) {
+      Object? failure;
       try {
-        // On Agora Web SDK, enableLocalVideo(true) creates the camera track
-        // and the join's `publishCameraTrack: true` flag auto-publishes it.
-        debugPrint('[voice] enableLocalVideo(true)...');
-        await engine.enableLocalVideo(true);
-        debugPrint('[voice] enableLocalVideo(true) OK');
-        try {
-          await engine.startPreview();
-          debugPrint('[voice] startPreview OK');
-        } catch (e) {
-          debugPrint('[voice] startPreview FAILED (non-fatal): $e');
-        }
-      } catch (e) {
         // ignore: avoid_print
-        print('[voice] setCamera(true) FAILED: $e');
+        print('[voice] calling enableLocalVideo(true)...');
+        await engine.enableLocalVideo(true);
+      } catch (e) {
+        failure = e;
+      }
+      if (failure == null) {
+        try {
+          // ignore: avoid_print
+          print('[voice] calling startPreview()...');
+          await engine.startPreview();
+        } catch (e) {
+          // On Agora Web SDK, the actual createCameraVideoTrack happens here,
+          // so failures here are the real ones (NotReadableError etc).
+          failure = e;
+        }
+      }
+      if (failure != null) {
+        lastCameraFailReason = _classifyCameraError(failure);
+        // ignore: avoid_print
+        print(
+            '[voice] setCamera(true) FAILED reason=$lastCameraFailReason: $failure');
         try {
           await engine.enableLocalVideo(false);
         } catch (_) {}
+        try {
+          await engine.stopPreview();
+        } catch (_) {}
         return false;
       }
+      lastCameraFailReason = null;
     } else {
       try {
         await engine.stopPreview();
@@ -403,7 +454,8 @@ class VoiceService {
           .doc(uid)
           .update({'cameraOn': on}).catchError((_) {});
     }
-    debugPrint('[voice] setCamera($on) DONE');
+    // ignore: avoid_print
+    print('[voice] setCamera($on) DONE');
     return true;
   }
 
