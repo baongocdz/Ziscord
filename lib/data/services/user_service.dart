@@ -18,6 +18,13 @@ class UserService {
     return AppUser.fromMap(doc.data() as Map<String, dynamic>);
   }
 
+  Stream<AppUser?> streamUser(String uid) {
+    return users.doc(uid).snapshots().map((doc) {
+      if (!doc.exists) return null;
+      return AppUser.fromMap(doc.data() as Map<String, dynamic>);
+    });
+  }
+
   Future<void> updateProfile({
     required String displayName,
     String? nickname,

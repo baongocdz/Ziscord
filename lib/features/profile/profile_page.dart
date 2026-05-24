@@ -495,7 +495,7 @@ class _ThemePickerSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'GIAO DIỆN',
+            'THEME',
             style: TextStyle(
               color: AppColors.textMuted,
               fontSize: 12,
@@ -548,48 +548,18 @@ class _ThemeCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
-        height: 110,
+        height: 64,
         child: Stack(
           children: [
             Container(
-              height: 110,
-              padding: const EdgeInsets.all(8),
+              height: 64,
               decoration: BoxDecoration(
+                color: theme.previewColor,
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: isSelected ? AppColors.accent : AppColors.divider,
                   width: isSelected ? 2 : 1,
                 ),
-                borderRadius: BorderRadius.circular(8),
-                color: AppColors.channelSidebar,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: theme.previewColor,
-                      border: Border.all(
-                        color: AppColors.divider,
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    theme.label,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
               ),
             ),
             if (isSelected)

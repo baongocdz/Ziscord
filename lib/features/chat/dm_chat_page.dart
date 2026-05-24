@@ -7,6 +7,8 @@ import '../../core/widgets/emoji_picker_sheet.dart';
 import '../../core/widgets/formatted_text.dart';
 import '../../core/widgets/image_preview_strip.dart';
 import '../../core/widgets/image_viewer_page.dart';
+import 'dart:async';
+
 import '../../core/widgets/mention_picker_bar.dart';
 import '../../core/widgets/user_avatar.dart';
 import '../../core/widgets/user_profile_sheet.dart';
@@ -40,6 +42,7 @@ class _DMChatPageState extends State<DMChatPage> {
   late final String _currentUserId;
   AppUser? _myUser;
   AppUser? _otherUser;
+  StreamSubscription<AppUser?>? _otherUserSub;
   List<XFile> _stagedImages = [];
   bool _isUploading = false;
   DMMessage? _replyingTo;
@@ -52,6 +55,11 @@ class _DMChatPageState extends State<DMChatPage> {
     _currentUserId = AuthService().currentUser!.uid;
     _messageController.addListener(_onTextChanged);
     _loadUsers();
+    _otherUserSub =
+        UserService().streamUser(widget.otherUserId).listen((user) {
+      if (!mounted) return;
+      setState(() => _otherUser = user);
+    });
     DMService().markAsRead(_currentUserId, widget.otherUserId);
   }
 
@@ -99,6 +107,7 @@ class _DMChatPageState extends State<DMChatPage> {
 
   @override
   void dispose() {
+    _otherUserSub?.cancel();
     _messageController.removeListener(_onTextChanged);
     _messageController.dispose();
     _scrollController.dispose();
@@ -336,22 +345,33 @@ class _DMChatPageState extends State<DMChatPage> {
           onPressed: () => Navigator.pop(context),
         ),
         titleSpacing: 0,
-        title: Row(
-          children: [
-            UserAvatar(
-              name: _otherName,
-              photoURL: _otherUser?.photoURL,
-              radius: 16,
+        title: InkWell(
+          onTap: () => showUserProfile(
+            context,
+            userId: widget.otherUserId,
+            userName: _otherName,
+          ),
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            child: Row(
+              children: [
+                UserAvatar(
+                  name: _otherName,
+                  photoURL: _otherUser?.photoURL,
+                  radius: 16,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  _otherName,
+                  style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16),
+                ),
+              ],
             ),
-            const SizedBox(width: 10),
-            Text(
-              _otherName,
-              style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16),
-            ),
-          ],
+          ),
         ),
         elevation: 0,
         bottom: PreferredSize(

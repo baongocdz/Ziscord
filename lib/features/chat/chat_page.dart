@@ -8,6 +8,7 @@ import '../../data/services/auth_service.dart';
 import '../../data/services/dm_service.dart';
 import '../../data/services/friend_service.dart';
 import '../../data/services/pending_dm_service.dart';
+import '../ai/ai_chat_page.dart';
 import 'dm_chat_page.dart';
 import 'pending_inbox_page.dart';
 
@@ -180,30 +181,19 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Widget _buildConversationList(String currentUserId, List<Friend> friends) {
-    if (friends.isEmpty) {
-      return Expanded(
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.people_outline, color: AppColors.textMuted, size: 48),
-              SizedBox(height: 8),
-              Text(
-                'Chưa có bạn bè nào\nthêm bạn trong tab Contacts',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.textMuted, fontSize: 14),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return Expanded(
       child: ListView.builder(
-        itemCount: friends.length,
+        itemCount: friends.length + 1,
         itemBuilder: (context, index) {
-          final friend = friends[index];
+          if (index == 0) {
+            return _AiAssistantTile(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AiChatPage()),
+              ),
+            );
+          }
+          final friend = friends[index - 1];
           return StreamBuilder<ChatPreview>(
             stream: _dmService.streamChatPreview(currentUserId, friend.uid),
             builder: (context, snapshot) {
@@ -421,6 +411,96 @@ class _ConversationTileState extends State<_ConversationTile> {
                             ),
                           ),
                       ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── AI Assistant Tile ────────────────────────────────────────────────────────
+
+class _AiAssistantTile extends StatefulWidget {
+  final VoidCallback onTap;
+  const _AiAssistantTile({required this.onTap});
+
+  @override
+  State<_AiAssistantTile> createState() => _AiAssistantTileState();
+}
+
+class _AiAssistantTileState extends State<_AiAssistantTile> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 100),
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          decoration: BoxDecoration(
+            color: _hovered ? AppColors.hoverBg : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: AppColors.accent,
+                child: const Icon(Icons.auto_awesome,
+                    color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'AI Assistant',
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: AppColors.accent,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'BOT',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      'Hỏi đáp với Groq',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),
