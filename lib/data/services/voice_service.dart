@@ -206,7 +206,11 @@ class VoiceService {
         onConnectionState?.call(state);
       },
       onAudioVolumeIndication: (conn, speakers, speakerNumber, totalVolume) {
-        const threshold = 10;
+        // print() reaches the browser console on web (debugPrint may not).
+        // ignore: avoid_print
+        print(
+            '[voice] volumeEvent total=$totalVolume count=$speakerNumber raw=${speakers.map((s) => "${s.uid}:${s.volume}").toList()}');
+        const threshold = 1;
         final next = <int>{};
         for (final s in speakers) {
           final v = s.volume ?? 0;
@@ -216,8 +220,8 @@ class VoiceService {
         }
         final cur = speakingAgoraUids.value;
         if (next.length != cur.length || !next.containsAll(cur)) {
-          debugPrint(
-              '[voice] speaking change: total=$totalVolume speakers=${speakers.map((s) => "${s.uid}:${s.volume}").toList()} → $next');
+          // ignore: avoid_print
+          print('[voice] speaking set → $next');
           speakingAgoraUids.value = next;
         }
       },
@@ -287,9 +291,11 @@ class VoiceService {
         smooth: 3,
         reportVad: false,
       );
-      debugPrint('[voice] enableAudioVolumeIndication OK');
+      // ignore: avoid_print
+      print('[voice] enableAudioVolumeIndication OK');
     } catch (e) {
-      debugPrint('[voice] enableAudioVolumeIndication FAILED: $e');
+      // ignore: avoid_print
+      print('[voice] enableAudioVolumeIndication FAILED: $e');
     }
 
     await _voiceMembers(serverId, channelId).doc(uid).set({
