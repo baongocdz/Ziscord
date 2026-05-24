@@ -101,7 +101,7 @@ class _BrowseServersPageState extends State<BrowseServersPage> {
     await _service.cancelMyJoinRequest(server.id);
     if (!mounted) return;
     setState(() => _pendingIds.remove(server.id));
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text('Đã huỷ yêu cầu'),
       backgroundColor: AppColors.accent,
     ));
@@ -121,7 +121,7 @@ class _BrowseServersPageState extends State<BrowseServersPage> {
       body: Column(
         children: [
           _buildSearchBar(),
-          const Divider(color: AppColors.divider, height: 1),
+          Divider(color: AppColors.divider, height: 1),
           Expanded(child: _buildBody()),
         ],
       ),
@@ -135,15 +135,15 @@ class _BrowseServersPageState extends State<BrowseServersPage> {
       child: TextField(
         controller: _searchCtrl,
         onChanged: (v) => setState(() => _query = v.trim()),
-        style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+        style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
         decoration: InputDecoration(
           hintText: 'Tìm kiếm server...',
           prefixIcon:
-              const Icon(Icons.search, color: AppColors.textMuted, size: 18),
+              Icon(Icons.search, color: AppColors.textMuted, size: 18),
           suffixIcon: _query.isEmpty
               ? null
               : IconButton(
-                  icon: const Icon(Icons.close,
+                  icon: Icon(Icons.close,
                       color: AppColors.textMuted, size: 16),
                   onPressed: () {
                     _searchCtrl.clear();
@@ -157,7 +157,7 @@ class _BrowseServersPageState extends State<BrowseServersPage> {
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(
+      return Center(
           child: CircularProgressIndicator(color: AppColors.accent));
     }
 
@@ -168,17 +168,17 @@ class _BrowseServersPageState extends State<BrowseServersPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline,
+              Icon(Icons.error_outline,
                   color: AppColors.danger, size: 48),
               const SizedBox(height: 12),
-              const Text('Không tải được danh sách server',
+              Text('Không tải được danh sách server',
                   style: TextStyle(
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.w600)),
               const SizedBox(height: 6),
               Text(_error!,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: AppColors.textMuted, fontSize: 12)),
               const SizedBox(height: 16),
               ElevatedButton(
@@ -201,14 +201,14 @@ class _BrowseServersPageState extends State<BrowseServersPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.explore_outlined,
+            Icon(Icons.explore_outlined,
                 color: AppColors.textMuted, size: 48),
             const SizedBox(height: 8),
             Text(
               _query.isEmpty
                   ? 'Chưa có server công khai nào'
                   : 'Không tìm thấy server nào',
-              style: const TextStyle(color: AppColors.textMuted),
+              style: TextStyle(color: AppColors.textMuted),
             ),
           ],
         ),
@@ -223,7 +223,7 @@ class _BrowseServersPageState extends State<BrowseServersPage> {
         padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: servers.length,
         separatorBuilder: (_, _) =>
-            const Divider(color: AppColors.divider, height: 1, indent: 72),
+            Divider(color: AppColors.divider, height: 1, indent: 72),
         itemBuilder: (context, i) => _ServerTile(
           server: servers[i],
           isJoined: _joinedIds.contains(servers[i].id),
@@ -264,7 +264,7 @@ class _ServerTile extends StatelessWidget {
           color: AppColors.background,
           borderRadius: BorderRadius.circular(6),
         ),
-        child: const Text('Đã tham gia',
+        child: Text('Đã tham gia',
             style: TextStyle(
                 color: AppColors.textMuted,
                 fontSize: 12,
@@ -272,7 +272,7 @@ class _ServerTile extends StatelessWidget {
       );
     }
     if (isJoining) {
-      return const SizedBox(
+      return SizedBox(
         width: 20,
         height: 20,
         child: CircularProgressIndicator(
@@ -284,7 +284,7 @@ class _ServerTile extends StatelessWidget {
         onPressed: onCancelRequest,
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.textMuted,
-          side: const BorderSide(color: AppColors.divider),
+          side: BorderSide(color: AppColors.divider),
           padding:
               const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           minimumSize: Size.zero,
@@ -323,12 +323,12 @@ class _ServerTile extends StatelessWidget {
       leading: _ServerIcon(server: server),
       title: Text(
         server.name,
-        style: const TextStyle(
+        style: TextStyle(
             color: AppColors.textPrimary, fontWeight: FontWeight.w600),
       ),
       subtitle: Text(
         server.isPublic ? 'Server công khai' : 'Server riêng tư',
-        style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+        style: TextStyle(color: AppColors.textMuted, fontSize: 12),
       ),
       trailing: _buildTrailing(),
     );

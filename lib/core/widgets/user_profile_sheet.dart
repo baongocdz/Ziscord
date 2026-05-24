@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../../data/models/app_user.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/friend_service.dart';
+import '../../data/services/user_service.dart';
 import '../../features/chat/dm_chat_page.dart';
 import '../constants/app_colors.dart';
+import 'image_viewer_page.dart';
 
-/// Shows a bottom sheet with a user's profile.
-/// Pass [userId] and [userName]. Does not show for the current user.
+/// Shows a bottom sheet with a user's full profile (avatar, banner, status,
+/// quick actions). Pass [userId] and [userName]. Does nothing for the current
+/// user.
 Future<void> showUserProfile(
   BuildContext context, {
   required String userId,
@@ -18,12 +22,13 @@ Future<void> showUserProfile(
   await showModalBottomSheet(
     context: context,
     backgroundColor: AppColors.channelSidebar,
+    isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
     builder: (_) => _UserProfileSheet(
       userId: userId,
-      userName: userName,
+      fallbackName: userName,
       currentUid: currentUid,
     ),
   );
@@ -31,12 +36,12 @@ Future<void> showUserProfile(
 
 class _UserProfileSheet extends StatefulWidget {
   final String userId;
-  final String userName;
+  final String fallbackName;
   final String currentUid;
 
   const _UserProfileSheet({
     required this.userId,
-    required this.userName,
+    required this.fallbackName,
     required this.currentUid,
   });
 
@@ -46,18 +51,29 @@ class _UserProfileSheet extends StatefulWidget {
 
 class _UserProfileSheetState extends State<_UserProfileSheet> {
   final _friendService = FriendService();
+  final _userService = UserService();
+  AppUser? _user;
   bool? _isFriend;
   bool _requesting = false;
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _checkFriendship();
+    _load();
   }
 
-  Future<void> _checkFriendship() async {
-    final result = await _friendService.isFriend(widget.currentUid, widget.userId);
-    if (mounted) setState(() => _isFriend = result);
+  Future<void> _load() async {
+    final results = await Future.wait([
+      _userService.getUserById(widget.userId),
+      _friendService.isFriend(widget.currentUid, widget.userId),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      _user = results[0] as AppUser?;
+      _isFriend = results[1] as bool;
+      _loading = false;
+    });
   }
 
   Future<void> _addFriend() async {
@@ -69,116 +85,239 @@ class _UserProfileSheetState extends State<_UserProfileSheet> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(msg), backgroundColor: AppColors.accent),
     );
-    if (msg == 'Đã gửi lời mời kết bạn') await _checkFriendship();
+    if (msg == 'Đã gửi lời mời kết bạn') {
+      final friend = await _friendService.isFriend(
+          widget.currentUid, widget.userId);
+      if (mounted) setState(() => _isFriend = friend);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final displayName = _user?.displayName.isNotEmpty == true
+        ? _user!.displayName
+        : widget.fallbackName;
+    final statusMessage = _user?.statusMessage ?? '';
+    final bannerUrl = _user?.bannerURL;
+    final photoUrl = _user?.photoURL;
+    final hasBanner = bannerUrl != null && bannerUrl.isNotEmpty;
+    final hasPhoto = photoUrl != null && photoUrl.isNotEmpty;
+
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+      child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            CircleAvatar(
-              radius: 36,
-              backgroundColor: AppColors.accent,
-              child: Text(
-                widget.userName.isNotEmpty
-                    ? widget.userName[0].toUpperCase()
-                    : '?',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
+            // Banner
+            GestureDetector(
+              onTap: hasBanner
+                  ? () => ImageViewerPage.open(context, imageUrl: bannerUrl)
+                  : null,
+              child: Container(
+                height: 100,
+                decoration: BoxDecoration(
+                  color: AppColors.accent,
+                  image: hasBanner
+                      ? DecorationImage(
+                          image: NetworkImage(bannerUrl),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                  borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(20)),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            Text(
-              widget.userName,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.textPrimary,
-                      side: const BorderSide(color: AppColors.divider),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
+
+            // Avatar overlapping banner + content below
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Transform.translate(
+                    offset: const Offset(0, -36),
+                    child: GestureDetector(
+                      onTap: hasPhoto
+                          ? () => ImageViewerPage.open(context,
+                              imageUrl: photoUrl)
+                          : null,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                              color: AppColors.channelSidebar, width: 4),
+                        ),
+                        child: CircleAvatar(
+                          radius: 36,
+                          backgroundColor: AppColors.accent,
+                          backgroundImage:
+                              hasPhoto ? NetworkImage(photoUrl) : null,
+                          child: !hasPhoto
+                              ? Text(
+                                  displayName.isNotEmpty
+                                      ? displayName[0].toUpperCase()
+                                      : '?',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                )
+                              : null,
+                        ),
+                      ),
                     ),
-                    icon: const Icon(Icons.message_rounded, size: 18),
-                    label: const Text('Nhắn tin'),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => DMChatPage(
-                            otherUserId: widget.userId,
-                            otherUserName: widget.userName,
+                  ),
+
+                  // Slide content up to compensate for the avatar translation
+                  Transform.translate(
+                    offset: const Offset(0, -20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          displayName,
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _isFriend == null
-                      ? const Center(
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                                color: AppColors.accent, strokeWidth: 2),
-                          ),
-                        )
-                      : _isFriend!
-                          ? OutlinedButton.icon(
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.textMuted,
-                                side: const BorderSide(
-                                    color: AppColors.divider),
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8)),
-                              ),
-                              icon: const Icon(Icons.people_rounded, size: 18),
-                              label: const Text('Đã là bạn'),
-                              onPressed: null,
-                            )
-                          : ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.accent,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8)),
-                              ),
-                              icon: _requesting
-                                  ? const SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                          color: Colors.white, strokeWidth: 2))
-                                  : const Icon(Icons.person_add_rounded,
-                                      size: 18),
-                              label: const Text('Kết bạn'),
-                              onPressed: _requesting ? null : _addFriend,
+                        if (statusMessage.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.background,
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                ),
-              ],
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'LỜI NHẮN',
+                                  style: TextStyle(
+                                    color: AppColors.textMuted,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  statusMessage,
+                                  style: TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 20),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.textPrimary,
+                                  side: BorderSide(color: AppColors.divider),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius:
+                                          BorderRadius.circular(8)),
+                                ),
+                                icon: const Icon(Icons.message_rounded,
+                                    size: 18),
+                                label: const Text('Nhắn tin'),
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => DMChatPage(
+                                        otherUserId: widget.userId,
+                                        otherUserName: displayName,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _loading || _isFriend == null
+                                  ? Center(
+                                      child: SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                            color: AppColors.accent,
+                                            strokeWidth: 2),
+                                      ),
+                                    )
+                                  : _isFriend!
+                                      ? OutlinedButton.icon(
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor:
+                                                AppColors.textMuted,
+                                            side: BorderSide(
+                                                color: AppColors.divider),
+                                            padding: const EdgeInsets
+                                                .symmetric(vertical: 12),
+                                            shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                        8)),
+                                          ),
+                                          icon: const Icon(
+                                              Icons.people_rounded,
+                                              size: 18),
+                                          label: const Text('Đã là bạn'),
+                                          onPressed: null,
+                                        )
+                                      : ElevatedButton.icon(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor:
+                                                AppColors.accent,
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets
+                                                .symmetric(vertical: 12),
+                                            shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                        8)),
+                                          ),
+                                          icon: _requesting
+                                              ? const SizedBox(
+                                                  width: 16,
+                                                  height: 16,
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                          color: Colors
+                                                              .white,
+                                                          strokeWidth: 2))
+                                              : const Icon(
+                                                  Icons.person_add_rounded,
+                                                  size: 18),
+                                          label: const Text('Kết bạn'),
+                                          onPressed: _requesting
+                                              ? null
+                                              : _addFriend,
+                                        ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

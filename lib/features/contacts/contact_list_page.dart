@@ -61,9 +61,9 @@ class _ContactListPageState extends State<ContactListPage>
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Row(
               children: [
-                const Icon(Icons.people, color: AppColors.textPrimary, size: 20),
+                Icon(Icons.people, color: AppColors.textPrimary, size: 20),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'Contacts',
                   style: TextStyle(
                     color: AppColors.textPrimary,
@@ -73,7 +73,7 @@ class _ContactListPageState extends State<ContactListPage>
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.person_add_outlined,
+                  icon: Icon(Icons.person_add_outlined,
                       color: AppColors.textMuted, size: 20),
                   tooltip: 'Thêm bạn',
                   onPressed: () => _showAddFriendSheet(context),
@@ -94,7 +94,7 @@ class _ContactListPageState extends State<ContactListPage>
               Tab(text: 'Lời mời'),
             ],
           ),
-          const Divider(color: AppColors.divider, height: 1),
+          Divider(color: AppColors.divider, height: 1),
 
           Expanded(
             child: TabBarView(
@@ -129,7 +129,7 @@ class _ContactListPageState extends State<ContactListPage>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Thêm bạn bè',
               style: TextStyle(
                   color: AppColors.textPrimary,
@@ -137,7 +137,7 @@ class _ContactListPageState extends State<ContactListPage>
                   fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Nhập email để gửi lời mời kết bạn',
               style: TextStyle(color: AppColors.textMuted, fontSize: 13),
             ),
@@ -146,8 +146,8 @@ class _ContactListPageState extends State<ContactListPage>
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               autofocus: true,
-              style: const TextStyle(color: AppColors.textPrimary),
-              decoration: const InputDecoration(
+              style: TextStyle(color: AppColors.textPrimary),
+              decoration: InputDecoration(
                 hintText: 'email@example.com',
                 prefixIcon:
                     Icon(Icons.email_outlined, color: AppColors.textMuted),
@@ -197,12 +197,12 @@ class _FriendsList extends StatelessWidget {
       stream: friendService.streamFriends(uid),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
+          return Center(
               child: CircularProgressIndicator(color: AppColors.accent));
         }
         final friends = snapshot.data ?? [];
         if (friends.isEmpty) {
-          return const Center(
+          return Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -245,16 +245,16 @@ class _FriendTile extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.channelSidebar,
-        title: const Text('Xóa kết bạn?',
+        title: Text('Xóa kết bạn?',
             style: TextStyle(color: AppColors.textPrimary)),
         content: Text(
           'Bạn có chắc muốn xóa ${friend.displayName} khỏi danh sách bạn bè?',
-          style: const TextStyle(color: AppColors.textMuted),
+          style: TextStyle(color: AppColors.textMuted),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Huỷ',
+            child: Text('Huỷ',
                 style: TextStyle(color: AppColors.textMuted)),
           ),
           ElevatedButton(
@@ -293,17 +293,17 @@ class _FriendTile extends StatelessWidget {
         ),
       ),
       title: Text(friend.displayName,
-          style: const TextStyle(
+          style: TextStyle(
               color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
       subtitle: Text('@${friend.nickname}',
-          style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+          style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
       trailing: PopupMenuButton<String>(
-        icon: const Icon(Icons.more_horiz, color: AppColors.textMuted),
+        icon: Icon(Icons.more_horiz, color: AppColors.textMuted),
         color: AppColors.channelSidebar,
         onSelected: (v) {
           if (v == 'remove') _confirmRemove(context);
         },
-        itemBuilder: (_) => const [
+        itemBuilder: (_) => [
           PopupMenuItem(
             value: 'remove',
             child: Row(
@@ -340,13 +340,13 @@ class _RequestsList extends StatelessWidget {
       stream: friendService.streamIncomingRequests(uid),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
+          return Center(
               child: CircularProgressIndicator(color: AppColors.accent));
         }
         final requests =
             (snapshot.data ?? []).where((r) => r.status == 'pending').toList();
         if (requests.isEmpty) {
-          return const Center(
+          return Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -411,12 +411,12 @@ class _RequestTile extends StatelessWidget {
           ),
           title: Text(
             displayName,
-            style: const TextStyle(
+            style: TextStyle(
                 color: AppColors.textPrimary, fontWeight: FontWeight.w600),
           ),
           subtitle: nickname.isNotEmpty
               ? Text('@$nickname',
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: AppColors.textMuted, fontSize: 12))
               : null,
           trailing: Row(

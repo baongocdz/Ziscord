@@ -78,7 +78,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
+                  Text(
                     'Chào mừng trở lại!',
                     style: TextStyle(
                       color: AppColors.textPrimary,
@@ -87,7 +87,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'Chúng tôi rất vui khi thấy bạn lại đây',
                     style: TextStyle(color: AppColors.textMuted, fontSize: 14),
                   ),
@@ -108,7 +108,7 @@ class _LoginPageState extends State<LoginPage> {
                         TextField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
-                          style: const TextStyle(color: AppColors.textPrimary),
+                          style: TextStyle(color: AppColors.textPrimary),
                           decoration:
                               const InputDecoration(hintText: 'email@example.com'),
                           textInputAction: TextInputAction.next,
@@ -119,7 +119,7 @@ class _LoginPageState extends State<LoginPage> {
                         TextField(
                           controller: _passwordController,
                           obscureText: _obscurePassword,
-                          style: const TextStyle(color: AppColors.textPrimary),
+                          style: TextStyle(color: AppColors.textPrimary),
                           decoration: InputDecoration(
                             hintText: '••••••••',
                             suffixIcon: IconButton(
@@ -166,7 +166,7 @@ class _LoginPageState extends State<LoginPage> {
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            const Text('Chưa có tài khoản? ',
+                            Text('Chưa có tài khoản? ',
                                 style: TextStyle(
                                     color: AppColors.textMuted, fontSize: 13)),
                             GestureDetector(
@@ -175,7 +175,7 @@ class _LoginPageState extends State<LoginPage> {
                                 MaterialPageRoute(
                                     builder: (_) => const RegisterPage()),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'Đăng ký',
                                 style: TextStyle(
                                   color: AppColors.accent,
@@ -207,7 +207,7 @@ class _FieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         color: AppColors.textMuted,
         fontSize: 12,
         fontWeight: FontWeight.w700,

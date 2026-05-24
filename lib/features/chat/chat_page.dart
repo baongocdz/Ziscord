@@ -44,7 +44,7 @@ class _ChatPageState extends State<ChatPage> {
   Widget build(BuildContext context) {
     final currentUser = AuthService().currentUser;
     if (currentUser == null) {
-      return const Center(
+      return Center(
         child: Text('Bạn chưa đăng nhập',
             style: TextStyle(color: AppColors.textMuted)),
       );
@@ -57,12 +57,12 @@ class _ChatPageState extends State<ChatPage> {
         children: [
           _buildHeader(),
           _buildSearchBox(),
-          const Divider(color: AppColors.divider, height: 1, thickness: 1),
+          Divider(color: AppColors.divider, height: 1, thickness: 1),
           StreamBuilder<List<Friend>>(
             stream: _friendService.streamFriends(currentUser.uid),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Expanded(
+                return Expanded(
                   child: Center(
                     child: CircularProgressIndicator(color: AppColors.accent),
                   ),
@@ -72,7 +72,7 @@ class _ChatPageState extends State<ChatPage> {
                 return Expanded(
                   child: Center(
                     child: Text('Lỗi: ${snapshot.error}',
-                        style: const TextStyle(color: AppColors.danger)),
+                        style: TextStyle(color: AppColors.danger)),
                   ),
                 );
               }
@@ -96,7 +96,7 @@ class _ChatPageState extends State<ChatPage> {
       padding: const EdgeInsets.fromLTRB(16, 16, 4, 8),
       child: Row(
         children: [
-          const Text(
+          Text(
             'Direct Messages',
             style: TextStyle(
               color: AppColors.textPrimary,
@@ -113,7 +113,7 @@ class _ChatPageState extends State<ChatPage> {
                 clipBehavior: Clip.none,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.mark_email_unread_outlined,
+                    icon: Icon(Icons.mark_email_unread_outlined,
                         color: AppColors.textMuted, size: 20),
                     onPressed: () => Navigator.push(
                       context,
@@ -129,7 +129,7 @@ class _ChatPageState extends State<ChatPage> {
                       child: Container(
                         width: 14,
                         height: 14,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           color: AppColors.danger,
                           shape: BoxShape.circle,
                         ),
@@ -159,15 +159,15 @@ class _ChatPageState extends State<ChatPage> {
       child: TextField(
         controller: _searchController,
         onChanged: (v) => setState(() => _searchText = v.trim()),
-        style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+        style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
         decoration: InputDecoration(
           hintText: 'Tìm kiếm tin nhắn...',
           prefixIcon:
-              const Icon(Icons.search, color: AppColors.textMuted, size: 18),
+              Icon(Icons.search, color: AppColors.textMuted, size: 18),
           suffixIcon: _searchText.isEmpty
               ? null
               : IconButton(
-                  icon: const Icon(Icons.close,
+                  icon: Icon(Icons.close,
                       color: AppColors.textMuted, size: 16),
                   onPressed: () {
                     _searchController.clear();
@@ -181,7 +181,7 @@ class _ChatPageState extends State<ChatPage> {
 
   Widget _buildConversationList(String currentUserId, List<Friend> friends) {
     if (friends.isEmpty) {
-      return const Expanded(
+      return Expanded(
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -241,12 +241,12 @@ class _ChatPageState extends State<ChatPage> {
         ),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
+            return Center(
                 child: CircularProgressIndicator(color: AppColors.accent));
           }
           final results = snapshot.data ?? [];
           if (results.isEmpty) {
-            return const Center(
+            return Center(
               child: Text('Không tìm thấy tin nhắn nào',
                   style: TextStyle(color: AppColors.textMuted)),
             );
@@ -415,7 +415,7 @@ class _ConversationTileState extends State<_ConversationTile> {
                             width: 8,
                             height: 8,
                             margin: const EdgeInsets.only(left: 6),
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               color: AppColors.accent,
                               shape: BoxShape.circle,
                             ),

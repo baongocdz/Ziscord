@@ -83,7 +83,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
+                  Text(
                     'Tạo tài khoản',
                     style: TextStyle(
                       color: AppColors.textPrimary,
@@ -109,7 +109,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           TextFormField(
                             controller: _displayNameController,
                             style:
-                                const TextStyle(color: AppColors.textPrimary),
+                                TextStyle(color: AppColors.textPrimary),
                             decoration:
                                 const InputDecoration(hintText: 'Tên của bạn'),
                             validator: (v) => v == null || v.trim().isEmpty
@@ -123,7 +123,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           TextFormField(
                             controller: _nicknameController,
                             style:
-                                const TextStyle(color: AppColors.textPrimary),
+                                TextStyle(color: AppColors.textPrimary),
                             decoration: const InputDecoration(
                                 hintText: 'nickname123'),
                             validator: (v) => v == null || v.trim().isEmpty
@@ -138,7 +138,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
                             style:
-                                const TextStyle(color: AppColors.textPrimary),
+                                TextStyle(color: AppColors.textPrimary),
                             decoration: const InputDecoration(
                                 hintText: 'email@example.com'),
                             validator: (v) => v == null || !v.contains('@')
@@ -153,7 +153,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             controller: _passwordController,
                             obscureText: _obscurePassword,
                             style:
-                                const TextStyle(color: AppColors.textPrimary),
+                                TextStyle(color: AppColors.textPrimary),
                             decoration: InputDecoration(
                               hintText: '••••••••',
                               suffixIcon: IconButton(
@@ -203,7 +203,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           const SizedBox(height: 8),
                           GestureDetector(
                             onTap: () => Navigator.pop(context),
-                            child: const Text(
+                            child: Text(
                               'Đã có tài khoản? Đăng nhập',
                               style: TextStyle(
                                 color: AppColors.accent,
@@ -234,7 +234,7 @@ class _FieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         color: AppColors.textMuted,
         fontSize: 12,
         fontWeight: FontWeight.w700,

@@ -33,7 +33,7 @@ class FormattedText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final base = baseStyle ??
-        const TextStyle(color: AppColors.textPrimary, fontSize: 15);
+        TextStyle(color: AppColors.textPrimary, fontSize: 15);
     return Text.rich(
       TextSpan(style: base, children: _parse(text, base)),
     );

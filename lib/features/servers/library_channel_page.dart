@@ -32,12 +32,12 @@ class LibraryChannelPage extends StatelessWidget {
             ),
             const SizedBox(width: 6),
             Text(channel.name,
-                style: const TextStyle(
+                style: TextStyle(
                     color: AppColors.textPrimary, fontSize: 16)),
           ],
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textMuted),
+          icon: Icon(Icons.arrow_back, color: AppColors.textMuted),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -46,7 +46,7 @@ class LibraryChannelPage extends StatelessWidget {
             ServerService().streamPosts(server.id, channel.id),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
+            return Center(
                 child:
                     CircularProgressIndicator(color: AppColors.accent));
           }
@@ -58,10 +58,10 @@ class LibraryChannelPage extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.article_outlined,
+                  Icon(Icons.article_outlined,
                       color: AppColors.textMuted, size: 56),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'Chưa có bài đăng nào',
                     style: TextStyle(
                         color: AppColors.textPrimary,
@@ -69,7 +69,7 @@ class LibraryChannelPage extends StatelessWidget {
                         fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'Nhấn + để tạo bài đăng đầu tiên',
                     style: TextStyle(
                         color: AppColors.textMuted, fontSize: 13),
@@ -140,7 +140,7 @@ class _PostCard extends StatelessWidget {
           children: [
             Text(
               post.title,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.w600,
                 fontSize: 15,
@@ -151,7 +151,7 @@ class _PostCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               post.content,
-              style: const TextStyle(
+              style: TextStyle(
                   color: AppColors.textMuted, fontSize: 13),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -159,23 +159,23 @@ class _PostCard extends StatelessWidget {
             const SizedBox(height: 10),
             Row(
               children: [
-                const Icon(Icons.person_outline,
+                Icon(Icons.person_outline,
                     color: AppColors.textMuted, size: 14),
                 const SizedBox(width: 4),
                 Text(post.authorName,
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: AppColors.textMuted, fontSize: 12)),
                 const Spacer(),
-                const Icon(Icons.chat_bubble_outline,
+                Icon(Icons.chat_bubble_outline,
                     color: AppColors.textMuted, size: 14),
                 const SizedBox(width: 4),
                 Text('${post.commentCount}',
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: AppColors.textMuted, fontSize: 12)),
                 const SizedBox(width: 12),
                 Text(
                   _formatDate(post.timestamp),
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: AppColors.textMuted, fontSize: 12),
                 ),
               ],

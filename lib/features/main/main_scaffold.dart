@@ -118,7 +118,7 @@ class _BottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.serverSidebar,
         border: Border(top: BorderSide(color: AppColors.divider, width: 0.5)),
       ),
@@ -273,13 +273,13 @@ class _ServerSidebar extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.channelSidebar,
-        title: const Text('Tham gia Server',
+        title: Text('Tham gia Server',
             style: TextStyle(color: AppColors.textPrimary)),
         content: TextField(
           controller: controller,
           autofocus: true,
-          style: const TextStyle(color: AppColors.textPrimary),
-          decoration: const InputDecoration(
+          style: TextStyle(color: AppColors.textPrimary),
+          decoration: InputDecoration(
             hintText: 'Nhập mã mời (8 ký tự)',
             hintStyle: TextStyle(color: AppColors.textMuted),
           ),
@@ -290,7 +290,7 @@ class _ServerSidebar extends StatelessWidget {
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child:
-                const Text('Huỷ', style: TextStyle(color: AppColors.textMuted)),
+                Text('Huỷ', style: TextStyle(color: AppColors.textMuted)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -391,7 +391,7 @@ class _ServerSidebar extends StatelessWidget {
             tooltip: 'Tạo / Tham gia Server',
             squarish: true,
             child:
-                const Icon(Icons.add, color: AppColors.accent, size: 22),
+                Icon(Icons.add, color: AppColors.accent, size: 22),
           ),
           const SizedBox(height: 12),
         ],
@@ -420,7 +420,7 @@ class _ServerOptionsSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
+          Text(
             'Thêm Server',
             style: TextStyle(
                 color: AppColors.textPrimary,
@@ -485,12 +485,12 @@ class _OptionTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title,
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w600,
                         fontSize: 15)),
                 Text(subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: AppColors.textMuted, fontSize: 12)),
               ],
             ),

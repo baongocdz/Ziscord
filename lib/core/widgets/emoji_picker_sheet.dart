@@ -16,7 +16,7 @@ Future<String?> showEmojiPicker(BuildContext context) {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Reaction',
               style: TextStyle(
                   color: AppColors.textPrimary,

@@ -3,6 +3,7 @@ class AppUser {
   final String email;
   final String displayName;
   final String nickname;
+  final String statusMessage;
   final String? photoURL;
   final String? bannerURL;
 
@@ -11,6 +12,7 @@ class AppUser {
     required this.email,
     required this.displayName,
     required this.nickname,
+    this.statusMessage = '',
     this.photoURL,
     this.bannerURL,
   });
@@ -21,6 +23,7 @@ class AppUser {
       email: map['email'] ?? '',
       displayName: map['displayName'] ?? '',
       nickname: map['nickname'] ?? '',
+      statusMessage: map['statusMessage'] ?? '',
       photoURL: map['photoURL'],
       bannerURL: map['bannerURL'],
     );
@@ -32,6 +35,7 @@ class AppUser {
       'email': email,
       'displayName': displayName,
       'nickname': nickname,
+      'statusMessage': statusMessage,
       'photoURL': photoURL,
       'bannerURL': bannerURL,
     };

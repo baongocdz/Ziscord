@@ -42,7 +42,7 @@ Future<String?> showChannelIconPicker(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Chọn icon cho kênh',
                   style: TextStyle(
                     color: AppColors.textPrimary,
@@ -93,15 +93,15 @@ Future<String?> showChannelIconPicker(
                   children: [
                     TextButton.icon(
                       onPressed: () => Navigator.pop(ctx, ''),
-                      icon: const Icon(Icons.do_not_disturb_alt,
+                      icon: Icon(Icons.do_not_disturb_alt,
                           color: AppColors.textMuted, size: 16),
-                      label: const Text('Không dùng icon',
+                      label: Text('Không dùng icon',
                           style: TextStyle(color: AppColors.textMuted)),
                     ),
                     const Spacer(),
                     TextButton(
                       onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Huỷ',
+                      child: Text('Huỷ',
                           style: TextStyle(color: AppColors.textMuted)),
                     ),
                   ],

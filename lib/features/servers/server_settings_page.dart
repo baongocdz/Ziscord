@@ -208,13 +208,13 @@ class _SettingsContentState extends State<_SettingsContent> {
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.channelSidebar,
         title:
-            Text(title, style: const TextStyle(color: AppColors.textPrimary)),
+            Text(title, style: TextStyle(color: AppColors.textPrimary)),
         content: Text(message,
-            style: const TextStyle(color: AppColors.textMuted)),
+            style: TextStyle(color: AppColors.textMuted)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Huỷ',
+            child: Text('Huỷ',
                 style: TextStyle(color: AppColors.textMuted)),
           ),
           ElevatedButton(
@@ -237,7 +237,7 @@ class _SettingsContentState extends State<_SettingsContent> {
       return Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(title: Text(widget.server.name)),
-        body: const Center(
+        body: Center(
             child: CircularProgressIndicator(color: AppColors.accent)),
       );
     }
@@ -277,7 +277,7 @@ class _SettingsContentState extends State<_SettingsContent> {
           if (_busy)
             Container(
               color: Colors.black.withValues(alpha: 0.4),
-              child: const Center(
+              child: Center(
                   child: CircularProgressIndicator(color: AppColors.accent)),
             ),
         ],
@@ -311,7 +311,7 @@ class _SettingsContentState extends State<_SettingsContent> {
                   const SizedBox(height: 8),
                   TextButton(
                     onPressed: _busy ? null : _removeIcon,
-                    child: const Text('Xóa icon',
+                    child: Text('Xóa icon',
                         style: TextStyle(color: AppColors.danger)),
                   ),
                 ],
@@ -331,7 +331,7 @@ class _SettingsContentState extends State<_SettingsContent> {
         children: [
           TextField(
             controller: _nameCtrl,
-            style: const TextStyle(color: AppColors.textPrimary),
+            style: TextStyle(color: AppColors.textPrimary),
             decoration: const InputDecoration(hintText: 'Tên server'),
             maxLength: 50,
             buildCounter: (_, {required currentLength,
@@ -377,9 +377,9 @@ class _SettingsContentState extends State<_SettingsContent> {
         child: SwitchListTile(
           contentPadding: EdgeInsets.zero,
           activeThumbColor: AppColors.accent,
-          title: const Text('Server công khai',
+          title: Text('Server công khai',
               style: TextStyle(color: AppColors.textPrimary)),
-          subtitle: const Text('Hiện trong tab Khám phá',
+          subtitle: Text('Hiện trong tab Khám phá',
               style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
           value: widget.server.isPublic,
           onChanged: _busy ? null : _togglePublic,
@@ -403,9 +403,9 @@ class _SettingsContentState extends State<_SettingsContent> {
         child: SwitchListTile(
           contentPadding: EdgeInsets.zero,
           activeThumbColor: AppColors.accent,
-          title: const Text('Bật duyệt thành viên',
+          title: Text('Bật duyệt thành viên',
               style: TextStyle(color: AppColors.textPrimary)),
-          subtitle: const Text(
+          subtitle: Text(
               'Áp dụng cho cả mã mời lẫn yêu cầu từ tab Khám phá',
               style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
           value: widget.server.requiresApproval,
@@ -436,7 +436,7 @@ class _SettingsContentState extends State<_SettingsContent> {
                     children: [
                       for (int i = 0; i < requests.length; i++) ...[
                         if (i > 0)
-                          const Divider(
+                          Divider(
                               color: AppColors.divider,
                               height: 1,
                               indent: 56),
@@ -486,7 +486,7 @@ class _SettingsContentState extends State<_SettingsContent> {
                 Expanded(
                   child: Text(
                     widget.server.inviteCode,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textPrimary,
                       fontFamily: 'monospace',
                       fontSize: 18,
@@ -496,7 +496,7 @@ class _SettingsContentState extends State<_SettingsContent> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.copy,
+                  icon: Icon(Icons.copy,
                       color: AppColors.textMuted, size: 20),
                   onPressed: () {
                     Clipboard.setData(
@@ -513,9 +513,9 @@ class _SettingsContentState extends State<_SettingsContent> {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
-                icon: const Icon(Icons.refresh,
+                icon: Icon(Icons.refresh,
                     color: AppColors.textMuted, size: 16),
-                label: const Text('Tạo mã mới',
+                label: Text('Tạo mã mới',
                     style: TextStyle(color: AppColors.textMuted)),
                 onPressed: _busy ? null : _regenerateCode,
               ),
@@ -536,7 +536,7 @@ class _SettingsContentState extends State<_SettingsContent> {
         children: [
           TextField(
             controller: _nicknameCtrl,
-            style: const TextStyle(color: AppColors.textPrimary),
+            style: TextStyle(color: AppColors.textPrimary),
             decoration: InputDecoration(
               hintText: 'Nickname trong ${widget.server.name}',
             ),
@@ -577,11 +577,11 @@ class _SettingsContentState extends State<_SettingsContent> {
               width: double.infinity,
               height: 44,
               child: OutlinedButton.icon(
-                icon: const Icon(Icons.logout, color: AppColors.danger),
-                label: const Text('Rời server',
+                icon: Icon(Icons.logout, color: AppColors.danger),
+                label: Text('Rời server',
                     style: TextStyle(color: AppColors.danger)),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.danger),
+                  side: BorderSide(color: AppColors.danger),
                 ),
                 onPressed: _busy ? null : _leaveServer,
               ),
@@ -680,7 +680,7 @@ class _JoinRequestTile extends StatelessWidget {
           Expanded(
             child: Text(
               request.displayName,
-              style: const TextStyle(
+              style: TextStyle(
                   color: AppColors.textPrimary, fontWeight: FontWeight.w600),
               overflow: TextOverflow.ellipsis,
             ),
@@ -695,7 +695,7 @@ class _JoinRequestTile extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           IconButton(
-            icon: const Icon(Icons.cancel,
+            icon: Icon(Icons.cancel,
                 color: AppColors.danger, size: 22),
             tooltip: 'Từ chối',
             onPressed: busy ? null : onReject,
@@ -726,7 +726,7 @@ class _Section extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.textMuted,
             fontSize: 12,
             fontWeight: FontWeight.w700,
@@ -737,7 +737,7 @@ class _Section extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             description!,
-            style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+            style: TextStyle(color: AppColors.textMuted, fontSize: 12),
           ),
         ],
         const SizedBox(height: 8),

@@ -67,7 +67,7 @@ class _PreviewItemState extends State<_PreviewItem> {
                     borderRadius: BorderRadius.circular(8),
                     child: Image.memory(snap.data!, fit: BoxFit.cover),
                   )
-                : const Center(
+                : Center(
                     child: SizedBox(
                       width: 20,
                       height: 20,

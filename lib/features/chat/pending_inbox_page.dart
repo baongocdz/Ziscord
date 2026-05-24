@@ -20,10 +20,10 @@ class PendingInboxPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: AppColors.channelSidebar,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textMuted),
+          icon: Icon(Icons.arrow_back, color: AppColors.textMuted),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Tin nhắn chờ',
           style: TextStyle(
               color: AppColors.textPrimary,
@@ -31,7 +31,7 @@ class PendingInboxPage extends StatelessWidget {
               fontSize: 16),
         ),
         elevation: 0,
-        bottom: const PreferredSize(
+        bottom: PreferredSize(
           preferredSize: Size.fromHeight(1),
           child: Divider(color: AppColors.divider, height: 1),
         ),
@@ -40,12 +40,12 @@ class PendingInboxPage extends StatelessWidget {
         stream: service.streamInbox(uid),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
+            return Center(
                 child: CircularProgressIndicator(color: AppColors.accent));
           }
           final messages = snapshot.data ?? [];
           if (messages.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -147,14 +147,14 @@ class _PendingTile extends StatelessWidget {
                   children: [
                     Text(
                       msg.fromName,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppColors.textPrimary,
                           fontWeight: FontWeight.w600,
                           fontSize: 14),
                     ),
                     Text(
                       DateFormat('dd/MM HH:mm').format(msg.timestamp),
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppColors.textMuted, fontSize: 11),
                     ),
                   ],
@@ -164,7 +164,7 @@ class _PendingTile extends StatelessWidget {
                 Container(
                   width: 8,
                   height: 8,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: AppColors.accent,
                     shape: BoxShape.circle,
                   ),
@@ -175,7 +175,7 @@ class _PendingTile extends StatelessWidget {
           Text(
             msg.text,
             style:
-                const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                TextStyle(color: AppColors.textPrimary, fontSize: 14),
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
@@ -187,7 +187,7 @@ class _PendingTile extends StatelessWidget {
                   onPressed: onDecline,
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.danger,
-                    side: const BorderSide(color: AppColors.danger),
+                    side: BorderSide(color: AppColors.danger),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(6)),
                     padding: const EdgeInsets.symmetric(vertical: 8),
@@ -201,7 +201,7 @@ class _PendingTile extends StatelessWidget {
                   onPressed: onAddFriend,
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.textPrimary,
-                    side: const BorderSide(color: AppColors.divider),
+                    side: BorderSide(color: AppColors.divider),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(6)),
                     padding: const EdgeInsets.symmetric(vertical: 8),

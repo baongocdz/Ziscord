@@ -72,16 +72,16 @@ class _LibraryPostPageState extends State<LibraryPostPage> {
         backgroundColor: AppColors.channelSidebar,
         title: Text(
           widget.channel.name,
-          style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
+          style: TextStyle(color: AppColors.textPrimary, fontSize: 16),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textMuted),
+          icon: Icon(Icons.arrow_back, color: AppColors.textMuted),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           if (widget.post.authorId == _currentUid)
             IconButton(
-              icon: const Icon(Icons.edit_outlined,
+              icon: Icon(Icons.edit_outlined,
                   color: AppColors.textMuted, size: 20),
               tooltip: 'Sửa bài đăng',
               onPressed: () => Navigator.push(
@@ -145,7 +145,7 @@ class _PostBody extends StatelessWidget {
       children: [
         Text(
           post.title,
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.textPrimary,
             fontSize: 20,
             fontWeight: FontWeight.w700,
@@ -154,16 +154,16 @@ class _PostBody extends StatelessWidget {
         const SizedBox(height: 6),
         Row(
           children: [
-            const Icon(Icons.person_outline,
+            Icon(Icons.person_outline,
                 color: AppColors.textMuted, size: 13),
             const SizedBox(width: 4),
             Text(post.authorName,
-                style: const TextStyle(
+                style: TextStyle(
                     color: AppColors.textMuted, fontSize: 12)),
             const SizedBox(width: 12),
             Text(
               _formatDate(post.timestamp),
-              style: const TextStyle(
+              style: TextStyle(
                   color: AppColors.textMuted, fontSize: 12),
             ),
           ],
@@ -171,12 +171,12 @@ class _PostBody extends StatelessWidget {
         const SizedBox(height: 14),
         Text(
           post.content,
-          style: const TextStyle(
+          style: TextStyle(
               color: AppColors.textPrimary, fontSize: 15, height: 1.5),
         ),
         const SizedBox(height: 20),
-        const Divider(color: AppColors.divider),
-        const Padding(
+        Divider(color: AppColors.divider),
+        Padding(
           padding: EdgeInsets.symmetric(vertical: 8),
           child: Text(
             'Bình luận',
@@ -222,7 +222,7 @@ class _CommentTile extends StatelessWidget {
               comment.authorName.isNotEmpty
                   ? comment.authorName[0].toUpperCase()
                   : '?',
-              style: const TextStyle(
+              style: TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 13,
                   fontWeight: FontWeight.w700),
@@ -237,7 +237,7 @@ class _CommentTile extends StatelessWidget {
                   children: [
                     Text(
                       comment.authorName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
@@ -246,7 +246,7 @@ class _CommentTile extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       _formatDate(comment.timestamp),
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppColors.textMuted, fontSize: 11),
                     ),
                   ],
@@ -254,7 +254,7 @@ class _CommentTile extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   comment.text,
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: AppColors.textPrimary, fontSize: 14, height: 1.4),
                 ),
               ],
@@ -303,9 +303,9 @@ class _CommentInput extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: TextField(
                 controller: controller,
-                style: const TextStyle(
+                style: TextStyle(
                     color: AppColors.textPrimary, fontSize: 14),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'Viết bình luận...',
                   hintStyle: TextStyle(color: AppColors.textMuted),
                   border: InputBorder.none,

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/theme/theme_notifier.dart';
+import '../../core/widgets/image_viewer_page.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/cloudinary_service.dart';
 import '../../data/services/user_service.dart';
@@ -15,7 +18,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final _displayNameController = TextEditingController();
-  final _nicknameController = TextEditingController();
+  final _statusController = TextEditingController();
   final _userService = UserService();
   final _authService = AuthService();
   final _cloudinary = CloudinaryService();
@@ -24,6 +27,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String? _bannerUrl;
   bool _isLoading = false;
   bool _isBannerUploading = false;
+  bool _isAvatarUploading = false;
   bool _isUserLoaded = false;
 
   @override
@@ -35,7 +39,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void dispose() {
     _displayNameController.dispose();
-    _nicknameController.dispose();
+    _statusController.dispose();
     super.dispose();
   }
 
@@ -45,7 +49,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (!mounted) return;
     setState(() {
       _displayNameController.text = user?.displayName ?? '';
-      _nicknameController.text = user?.nickname ?? '';
+      _statusController.text = user?.statusMessage ?? '';
       _avatarUrl = user?.photoURL;
       _bannerUrl = user?.bannerURL;
       _isUserLoaded = true;
@@ -53,7 +57,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _pickAvatar() async {
-    setState(() => _isLoading = true);
+    setState(() => _isAvatarUploading = true);
     try {
       final (url, error) = await _cloudinary.pickAndUpload();
       if (error != null) {
@@ -69,7 +73,7 @@ class _ProfilePageState extends State<ProfilePage> {
       if (!mounted) return;
       _showSnack('Lỗi: $e', isError: true);
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _isAvatarUploading = false);
     }
   }
 
@@ -99,7 +103,7 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       await _userService.updateProfile(
         displayName: _displayNameController.text.trim(),
-        nickname: _nicknameController.text.trim(),
+        statusMessage: _statusController.text.trim(),
       );
       await _authService.loadCurrentUser();
       if (!mounted) return;
@@ -110,6 +114,16 @@ class _ProfilePageState extends State<ProfilePage> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _viewBanner() {
+    if (_bannerUrl == null || _bannerUrl!.isEmpty) return;
+    ImageViewerPage.open(context, imageUrl: _bannerUrl!);
+  }
+
+  void _viewAvatar() {
+    if (_avatarUrl == null || _avatarUrl!.isEmpty) return;
+    ImageViewerPage.open(context, imageUrl: _avatarUrl!);
   }
 
   Future<void> _logout() async {
@@ -132,7 +146,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     if (!_isUserLoaded) {
-      return const Center(
+      return Center(
           child: CircularProgressIndicator(color: AppColors.accent));
     }
 
@@ -144,11 +158,14 @@ class _ProfilePageState extends State<ProfilePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header banner
+            // Header banner — tap to view, camera icon to change
             _BannerArea(
               bannerUrl: _bannerUrl,
               isLoading: _isBannerUploading,
-              onTap: _isBannerUploading ? null : _pickBanner,
+              onTapView: _bannerUrl != null && _bannerUrl!.isNotEmpty
+                  ? _viewBanner
+                  : null,
+              onTapChange: _isBannerUploading ? null : _pickBanner,
             ),
 
             // Avatar overlapping banner
@@ -156,21 +173,15 @@ class _ProfilePageState extends State<ProfilePage> {
               offset: const Offset(0, -40),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    _AvatarPicker(
-                      avatarUrl: _avatarUrl,
-                      displayName: _displayNameController.text,
-                      isLoading: _isLoading,
-                      onTap: _pickAvatar,
-                    ),
-                    const Spacer(),
-                    _OutlineButton(
-                      label: 'Đổi ảnh nền',
-                      onTap: _isBannerUploading ? null : _pickBanner,
-                    ),
-                  ],
+                child: _AvatarPicker(
+                  avatarUrl: _avatarUrl,
+                  displayName: _displayNameController.text,
+                  isLoading: _isAvatarUploading,
+                  onTapView:
+                      _avatarUrl != null && _avatarUrl!.isNotEmpty
+                          ? _viewAvatar
+                          : null,
+                  onTapChange: _isAvatarUploading ? null : _pickAvatar,
                 ),
               ),
             ),
@@ -187,7 +198,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       _displayNameController.text.isNotEmpty
                           ? _displayNameController.text
                           : 'Người dùng',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -195,7 +206,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     Text(
                       email,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppColors.textMuted, fontSize: 13),
                     ),
                   ],
@@ -214,7 +225,7 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'THÔNG TIN CÁ NHÂN',
                     style: TextStyle(
                       color: AppColors.textMuted,
@@ -228,18 +239,23 @@ class _ProfilePageState extends State<ProfilePage> {
                     label: 'TÊN HIỂN THỊ',
                     child: TextField(
                       controller: _displayNameController,
-                      style: const TextStyle(color: AppColors.textPrimary),
+                      style: TextStyle(color: AppColors.textPrimary),
                       decoration: const InputDecoration(hintText: 'Tên của bạn'),
                     ),
                   ),
                   const SizedBox(height: 16),
                   _FormRow(
-                    label: 'NICKNAME',
+                    label: 'LỜI NHẮN',
                     child: TextField(
-                      controller: _nicknameController,
-                      style: const TextStyle(color: AppColors.textPrimary),
-                      decoration:
-                          const InputDecoration(hintText: 'nickname123'),
+                      controller: _statusController,
+                      style: TextStyle(color: AppColors.textPrimary),
+                      maxLength: 140,
+                      maxLines: 2,
+                      minLines: 1,
+                      decoration: const InputDecoration(
+                        hintText: 'Một câu giới thiệu hoặc trạng thái...',
+                        counterText: '',
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -269,6 +285,9 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
 
+            // Theme picker
+            const _ThemePickerSection(),
+
             // Logout
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
@@ -278,7 +297,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.danger,
-                    side: const BorderSide(color: AppColors.danger),
+                    side: BorderSide(color: AppColors.danger),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(4)),
                   ),
@@ -301,22 +320,24 @@ class _AvatarPicker extends StatelessWidget {
   final String? avatarUrl;
   final String displayName;
   final bool isLoading;
-  final VoidCallback onTap;
+  final VoidCallback? onTapView;
+  final VoidCallback? onTapChange;
 
   const _AvatarPicker({
     required this.avatarUrl,
     required this.displayName,
     required this.isLoading,
-    required this.onTap,
+    required this.onTapView,
+    required this.onTapChange,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: isLoading ? null : onTap,
-      child: Stack(
-        children: [
-          Container(
+    return Stack(
+      children: [
+        GestureDetector(
+          onTap: onTapView,
+          child: Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: AppColors.channelSidebar, width: 4),
@@ -339,12 +360,15 @@ class _AvatarPicker extends StatelessWidget {
                   : null,
             ),
           ),
-          Positioned(
-            bottom: 0,
-            right: 0,
+        ),
+        Positioned(
+          bottom: 0,
+          right: 0,
+          child: GestureDetector(
+            onTap: isLoading ? null : onTapChange,
             child: Container(
-              width: 24,
-              height: 24,
+              width: 28,
+              height: 28,
               decoration: BoxDecoration(
                 color: AppColors.selectedBg,
                 shape: BoxShape.circle,
@@ -352,17 +376,17 @@ class _AvatarPicker extends StatelessWidget {
                     Border.all(color: AppColors.channelSidebar, width: 2),
               ),
               child: isLoading
-                  ? const Padding(
-                      padding: EdgeInsets.all(4),
+                  ? Padding(
+                      padding: const EdgeInsets.all(5),
                       child: CircularProgressIndicator(
                           color: AppColors.textPrimary, strokeWidth: 2),
                     )
-                  : const Icon(Icons.camera_alt,
-                      color: AppColors.textPrimary, size: 12),
+                  : Icon(Icons.camera_alt,
+                      color: AppColors.textPrimary, size: 14),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -380,7 +404,7 @@ class _FormRow extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.textMuted,
             fontSize: 11,
             fontWeight: FontWeight.w700,
@@ -394,58 +418,26 @@ class _FormRow extends StatelessWidget {
   }
 }
 
-class _OutlineButton extends StatelessWidget {
-  final String label;
-  final VoidCallback? onTap;
-
-  const _OutlineButton({required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final disabled = onTap == null;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          border: Border.all(
-              color: disabled
-                  ? AppColors.divider.withValues(alpha: 0.5)
-                  : AppColors.divider),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-              color: disabled
-                  ? AppColors.textMuted
-                  : AppColors.textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.w600),
-        ),
-      ),
-    );
-  }
-}
-
 class _BannerArea extends StatelessWidget {
   final String? bannerUrl;
   final bool isLoading;
-  final VoidCallback? onTap;
+  final VoidCallback? onTapView;
+  final VoidCallback? onTapChange;
 
   const _BannerArea({
     required this.bannerUrl,
     required this.isLoading,
-    required this.onTap,
+    required this.onTapView,
+    required this.onTapChange,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Stack(
-        children: [
-          Container(
+    return Stack(
+      children: [
+        GestureDetector(
+          onTap: onTapView,
+          child: Container(
             width: double.infinity,
             height: 120,
             decoration: BoxDecoration(
@@ -458,11 +450,14 @@ class _BannerArea extends StatelessWidget {
                   : null,
             ),
           ),
-          Positioned(
-            right: 12,
-            bottom: 12,
+        ),
+        Positioned(
+          right: 12,
+          bottom: 12,
+          child: GestureDetector(
+            onTap: isLoading ? null : onTapChange,
             child: Container(
-              padding: const EdgeInsets.all(6),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.6),
                 shape: BoxShape.circle,
@@ -475,10 +470,146 @@ class _BannerArea extends StatelessWidget {
                           color: Colors.white, strokeWidth: 2),
                     )
                   : const Icon(Icons.camera_alt,
-                      color: Colors.white, size: 16),
+                      color: Colors.white, size: 18),
             ),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ThemePickerSection extends StatelessWidget {
+  const _ThemePickerSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'GIAO DIỆN',
+            style: TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ValueListenableBuilder<AppThemeOption>(
+            valueListenable: ThemeNotifier.instance,
+            builder: (context, currentTheme, _) {
+              final options = AppThemeOption.values;
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (int i = 0; i < options.length; i++) ...[
+                    Expanded(
+                      child: _ThemeCard(
+                        theme: options[i],
+                        isSelected: currentTheme == options[i],
+                        onTap: () =>
+                            ThemeNotifier.instance.setTheme(options[i]),
+                      ),
+                    ),
+                    if (i < options.length - 1) const SizedBox(width: 8),
+                  ],
+                ],
+              );
+            },
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _ThemeCard extends StatelessWidget {
+  final AppThemeOption theme;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _ThemeCard({
+    required this.theme,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        height: 110,
+        child: Stack(
+          children: [
+            Container(
+              height: 110,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: isSelected ? AppColors.accent : AppColors.divider,
+                  width: isSelected ? 2 : 1,
+                ),
+                borderRadius: BorderRadius.circular(8),
+                color: AppColors.channelSidebar,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: theme.previewColor,
+                      border: Border.all(
+                        color: AppColors.divider,
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    theme.label,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              Positioned(
+                top: 4,
+                right: 4,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.channelSidebar,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.check_circle,
+                    color: AppColors.accent,
+                    size: 16,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

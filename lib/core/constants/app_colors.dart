@@ -1,26 +1,30 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_theme.dart';
+import '../theme/theme_notifier.dart';
+
+/// Theme-aware color accessors. Values change based on the active theme in
+/// [ThemeNotifier]. Widgets that read these are rebuilt automatically because
+/// the root `MaterialApp` is wrapped in a `ValueListenableBuilder` over the
+/// notifier, so the whole tree rebuilds on theme change.
 class AppColors {
-  // Backgrounds
-  static const Color serverSidebar = Color(0xFF1E1F22);
-  static const Color channelSidebar = Color(0xFF2B2D31);
-  static const Color background = Color(0xFF313338);
-  static const Color inputBg = Color(0xFF383A40);
+  static ThemePalette get _p => ThemeNotifier.instance.value.palette;
 
-  // Text
-  static const Color textPrimary = Color(0xFFDBDEE1);
-  static const Color textMuted = Color(0xFF949BA4);
+  static Color get serverSidebar => _p.serverSidebar;
+  static Color get channelSidebar => _p.channelSidebar;
+  static Color get background => _p.background;
+  static Color get inputBg => _p.inputBg;
 
-  // Accent / brand
-  static const Color accent = Color(0xFF5865F2);
-  static const Color danger = Color(0xFFED4245);
+  static Color get textPrimary => _p.textPrimary;
+  static Color get textMuted => _p.textMuted;
 
-  // Structural
-  static const Color divider = Color(0xFF3F4147);
-  static const Color selectedBg = Color(0xFF404249);
-  static const Color hoverBg = Color(0xFF35373C);
+  static Color get accent => _p.accent;
+  static Color get danger => _p.danger;
 
-  // Message bubbles
-  static const Color messageSelf = Color(0xFF5865F2);
-  static const Color messageOther = Color(0xFF404249);
+  static Color get divider => _p.divider;
+  static Color get selectedBg => _p.selectedBg;
+  static Color get hoverBg => _p.hoverBg;
+
+  static Color get messageSelf => _p.messageSelf;
+  static Color get messageOther => _p.messageOther;
 }

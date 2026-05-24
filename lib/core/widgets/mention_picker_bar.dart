@@ -83,7 +83,7 @@ class MentionPickerBar extends StatelessWidget {
     if (filtered.isEmpty) return const SizedBox.shrink();
     return Container(
       constraints: const BoxConstraints(maxHeight: 200),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.channelSidebar,
         border: Border(top: BorderSide(color: AppColors.divider, width: 0.5)),
       ),
@@ -97,7 +97,7 @@ class MentionPickerBar extends StatelessWidget {
               query.isEmpty
                   ? 'THÀNH VIÊN'
                   : 'THÀNH VIÊN — KHỚP "@$query"',
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.textMuted,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
@@ -129,11 +129,11 @@ class MentionPickerBar extends StatelessWidget {
                           child: Text(
                             user.displayName,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 color: AppColors.textPrimary, fontSize: 14),
                           ),
                         ),
-                        const Text(
+                        Text(
                           '@',
                           style: TextStyle(
                               color: AppColors.accent,

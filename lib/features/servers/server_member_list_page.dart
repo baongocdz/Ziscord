@@ -26,10 +26,10 @@ class ServerMemberListPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: AppColors.channelSidebar,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textMuted),
+          icon: Icon(Icons.arrow_back, color: AppColors.textMuted),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Thành viên',
           style: TextStyle(
               color: AppColors.textPrimary,
@@ -37,7 +37,7 @@ class ServerMemberListPage extends StatelessWidget {
               fontSize: 16),
         ),
         elevation: 0,
-        bottom: const PreferredSize(
+        bottom: PreferredSize(
           preferredSize: Size.fromHeight(1),
           child: Divider(color: AppColors.divider, height: 1),
         ),
@@ -46,12 +46,12 @@ class ServerMemberListPage extends StatelessWidget {
         stream: service.streamMembersWithNames(server.id),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
+            return Center(
                 child: CircularProgressIndicator(color: AppColors.accent));
           }
           final members = snapshot.data ?? [];
           if (members.isEmpty) {
-            return const Center(
+            return Center(
               child: Text('Không có thành viên',
                   style: TextStyle(color: AppColors.textMuted)),
             );
@@ -100,16 +100,16 @@ class ServerMemberListPage extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.channelSidebar,
         title: Text('Kick ${member.effectiveName}?',
-            style: const TextStyle(color: AppColors.textPrimary)),
+            style: TextStyle(color: AppColors.textPrimary)),
         content: Text(
           '${member.effectiveName} sẽ bị xoá khỏi server này.',
-          style: const TextStyle(color: AppColors.textMuted),
+          style: TextStyle(color: AppColors.textMuted),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child:
-                const Text('Huỷ', style: TextStyle(color: AppColors.textMuted)),
+                Text('Huỷ', style: TextStyle(color: AppColors.textMuted)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -137,7 +137,7 @@ class _SectionHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           color: AppColors.textMuted,
           fontSize: 11,
           fontWeight: FontWeight.w700,
@@ -208,7 +208,7 @@ class _MemberTile extends StatelessWidget {
                 color: AppColors.accent.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: const Text(
+              child: Text(
                 'Bạn',
                 style: TextStyle(
                     color: AppColors.accent,
@@ -243,11 +243,11 @@ class _MemberTile extends StatelessWidget {
       subtitle: member.nickname.isNotEmpty
           ? Text('@${member.nickname}',
               style:
-                  const TextStyle(color: AppColors.textMuted, fontSize: 12))
+                  TextStyle(color: AppColors.textMuted, fontSize: 12))
           : null,
       trailing: (canKick || canTogglePerm)
           ? PopupMenuButton<String>(
-              icon: const Icon(Icons.more_horiz, color: AppColors.textMuted),
+              icon: Icon(Icons.more_horiz, color: AppColors.textMuted),
               color: AppColors.channelSidebar,
               onSelected: (v) {
                 if (v == 'kick') onKick();
@@ -272,13 +272,13 @@ class _MemberTile extends StatelessWidget {
                               ? 'Thu hồi quyền tạo kênh'
                               : 'Cấp quyền tạo kênh',
                           style:
-                              const TextStyle(color: AppColors.textPrimary),
+                              TextStyle(color: AppColors.textPrimary),
                         ),
                       ],
                     ),
                   ),
                 if (canKick)
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'kick',
                     child: Row(
                       children: [

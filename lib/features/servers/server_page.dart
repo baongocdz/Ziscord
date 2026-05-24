@@ -31,11 +31,11 @@ class ServerPage extends StatelessWidget {
       builder: (context, snap) {
         final server = snap.data;
         if (server == null && snap.connectionState == ConnectionState.waiting) {
-          return const Center(
+          return Center(
               child: CircularProgressIndicator(color: AppColors.accent));
         }
         if (server == null) {
-          return const Center(
+          return Center(
               child: Text('Server không tồn tại',
                   style: TextStyle(color: AppColors.textMuted)));
         }
@@ -76,7 +76,7 @@ class _ServerContent extends StatelessWidget {
         children: [
           // Server header
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               border: Border(
                   bottom: BorderSide(color: AppColors.divider, width: 1)),
             ),
@@ -93,7 +93,7 @@ class _ServerContent extends StatelessWidget {
                         children: [
                           Text(
                             server.name,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w700,
                               fontSize: 16,
@@ -118,7 +118,7 @@ class _ServerContent extends StatelessWidget {
                                   const SizedBox(width: 6),
                                   Text(
                                     '$count thành viên',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: AppColors.textMuted,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w500,
@@ -132,7 +132,7 @@ class _ServerContent extends StatelessWidget {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.people_outline,
+                      icon: Icon(Icons.people_outline,
                           color: AppColors.textMuted, size: 20),
                       onPressed: () => Navigator.push(
                         context,
@@ -148,7 +148,7 @@ class _ServerContent extends StatelessWidget {
                       constraints: const BoxConstraints(),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.settings,
+                      icon: Icon(Icons.settings,
                           color: AppColors.textMuted, size: 20),
                       onPressed: () => Navigator.push(
                         context,
@@ -175,7 +175,7 @@ class _ServerContent extends StatelessWidget {
               stream: service.streamChannels(server.id),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
+                  return Center(
                       child: CircularProgressIndicator(
                           color: AppColors.accent));
                 }
@@ -183,7 +183,7 @@ class _ServerContent extends StatelessWidget {
                 final channels = snapshot.data ?? [];
 
                 if (channels.isEmpty) {
-                  return const Padding(
+                  return Padding(
                     padding: EdgeInsets.all(16),
                     child: Text(
                       'Chưa có kênh nào\nNhấn + để tạo kênh',
@@ -230,14 +230,14 @@ class _ServerContent extends StatelessWidget {
           backgroundColor: AppColors.channelSidebar,
           title: Text(
             type == 'text' ? 'Tạo kênh văn bản' : 'Tạo kênh thoại',
-            style: const TextStyle(color: AppColors.textPrimary),
+            style: TextStyle(color: AppColors.textPrimary),
           ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('ICON',
+                Text('ICON',
                     style: TextStyle(
                         color: AppColors.textMuted,
                         fontSize: 11,
@@ -262,7 +262,7 @@ class _ServerContent extends StatelessWidget {
                   },
                 ),
                 const SizedBox(height: 16),
-                const Text('TÊN KÊNH',
+                Text('TÊN KÊNH',
                     style: TextStyle(
                         color: AppColors.textMuted,
                         fontSize: 11,
@@ -271,13 +271,13 @@ class _ServerContent extends StatelessWidget {
                 TextField(
                   controller: controller,
                   autofocus: true,
-                  style: const TextStyle(color: AppColors.textPrimary),
+                  style: TextStyle(color: AppColors.textPrimary),
                   decoration:
                       const InputDecoration(hintText: 'tên-kênh'),
                 ),
                 if (type == 'text') ...[
                   const SizedBox(height: 16),
-                  const Text('LOẠI KÊNH',
+                  Text('LOẠI KÊNH',
                       style: TextStyle(
                           color: AppColors.textMuted,
                           fontSize: 11,
@@ -306,7 +306,7 @@ class _ServerContent extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Huỷ',
+              child: Text('Huỷ',
                   style: TextStyle(color: AppColors.textMuted)),
             ),
             ElevatedButton(
@@ -358,13 +358,13 @@ class _SearchBar extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.search,
+            Icon(Icons.search,
                 color: AppColors.textMuted, size: 18),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 'Tìm kiếm trong ${server.name}',
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.textMuted,
                   fontSize: 13,
                 ),
@@ -450,14 +450,14 @@ class _ChannelList extends StatelessWidget {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
           backgroundColor: AppColors.channelSidebar,
-          title: const Text('Sửa kênh',
+          title: Text('Sửa kênh',
               style: TextStyle(color: AppColors.textPrimary)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('ICON',
+                Text('ICON',
                     style: TextStyle(
                         color: AppColors.textMuted,
                         fontSize: 11,
@@ -482,7 +482,7 @@ class _ChannelList extends StatelessWidget {
                   },
                 ),
                 const SizedBox(height: 16),
-                const Text('TÊN KÊNH',
+                Text('TÊN KÊNH',
                     style: TextStyle(
                         color: AppColors.textMuted,
                         fontSize: 11,
@@ -491,7 +491,7 @@ class _ChannelList extends StatelessWidget {
                 TextField(
                   controller: controller,
                   autofocus: true,
-                  style: const TextStyle(color: AppColors.textPrimary),
+                  style: TextStyle(color: AppColors.textPrimary),
                   decoration: const InputDecoration(hintText: 'Tên kênh'),
                 ),
               ],
@@ -500,7 +500,7 @@ class _ChannelList extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Huỷ',
+              child: Text('Huỷ',
                   style: TextStyle(color: AppColors.textMuted)),
             ),
             ElevatedButton(
@@ -537,13 +537,13 @@ class _ChannelList extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.channelSidebar,
         title: Text('Xóa kênh #${ch.name}?',
-            style: const TextStyle(color: AppColors.textPrimary)),
-        content: const Text('Hành động này không thể hoàn tác.',
+            style: TextStyle(color: AppColors.textPrimary)),
+        content: Text('Hành động này không thể hoàn tác.',
             style: TextStyle(color: AppColors.textMuted)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Huỷ',
+            child: Text('Huỷ',
                 style: TextStyle(color: AppColors.textMuted)),
           ),
           ElevatedButton(
@@ -691,7 +691,7 @@ class _ManageableChannelTile extends StatelessWidget {
               children: [
                 ReorderableDragStartListener(
                   index: index,
-                  child: const Padding(
+                  child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 2),
                     child: Icon(Icons.drag_indicator,
                         color: AppColors.textMuted, size: 16),
@@ -734,7 +734,7 @@ class _ManageableChannelTile extends StatelessWidget {
                     height: 28,
                     width: 28,
                     child: PopupMenuButton<String>(
-                      icon: const Icon(Icons.more_horiz,
+                      icon: Icon(Icons.more_horiz,
                           color: AppColors.textMuted, size: 16),
                       padding: EdgeInsets.zero,
                       color: AppColors.channelSidebar,
@@ -742,7 +742,7 @@ class _ManageableChannelTile extends StatelessWidget {
                         if (v == 'edit') onEdit();
                         if (v == 'delete') onDelete();
                       },
-                      itemBuilder: (_) => const [
+                      itemBuilder: (_) => [
                         PopupMenuItem(
                           value: 'edit',
                           child: Row(
@@ -795,13 +795,13 @@ class _ChannelGroupHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 16, 8, 4),
       child: Row(
         children: [
-          const Icon(Icons.chevron_right,
+          Icon(Icons.chevron_right,
               color: AppColors.textMuted, size: 14),
           const SizedBox(width: 2),
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.textMuted,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
@@ -812,7 +812,7 @@ class _ChannelGroupHeader extends StatelessWidget {
           if (onAdd != null)
             GestureDetector(
               onTap: onAdd,
-              child: const Icon(Icons.add,
+              child: Icon(Icons.add,
                   color: AppColors.textMuted, size: 18),
             ),
         ],
@@ -929,11 +929,11 @@ class _VoiceCountChip extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.headset,
+              Icon(Icons.headset,
                   color: AppColors.textMuted, size: 12),
               const SizedBox(width: 3),
               Text('$count',
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: AppColors.textMuted,
                       fontSize: 11,
                       fontWeight: FontWeight.w700)),
@@ -1014,12 +1014,12 @@ class _VoiceMemberRow extends StatelessWidget {
                   member.displayName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: AppColors.textMuted, fontSize: 12),
                 ),
               ),
               if (member.isMuted)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.only(left: 4),
                   child: Icon(Icons.mic_off,
                       color: AppColors.danger, size: 12),
@@ -1139,7 +1139,7 @@ class _RadioOption extends StatelessWidget {
                       child: Container(
                         width: 10,
                         height: 10,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: AppColors.accent,
                         ),
@@ -1152,10 +1152,10 @@ class _RadioOption extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(label,
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: AppColors.textPrimary, fontSize: 14)),
                 Text(subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: AppColors.textMuted, fontSize: 12)),
               ],
             ),

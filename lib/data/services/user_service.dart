@@ -20,15 +20,17 @@ class UserService {
 
   Future<void> updateProfile({
     required String displayName,
-    required String nickname,
+    String? nickname,
+    String? statusMessage,
   }) async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
 
-    await users.doc(currentUser.uid).update({
-      'displayName': displayName,
-      'nickname': nickname,
-    });
+    final data = <String, dynamic>{'displayName': displayName};
+    if (nickname != null) data['nickname'] = nickname;
+    if (statusMessage != null) data['statusMessage'] = statusMessage;
+
+    await users.doc(currentUser.uid).update(data);
   }
 
   Future<void> updateAvatar(String url) async {

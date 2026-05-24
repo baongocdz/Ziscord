@@ -6,8 +6,10 @@ import '../../core/constants/app_colors.dart';
 import '../../core/widgets/emoji_picker_sheet.dart';
 import '../../core/widgets/formatted_text.dart';
 import '../../core/widgets/image_preview_strip.dart';
+import '../../core/widgets/image_viewer_page.dart';
 import '../../core/widgets/mention_picker_bar.dart';
 import '../../core/widgets/user_avatar.dart';
+import '../../core/widgets/user_profile_sheet.dart';
 import '../../data/models/app_user.dart';
 import '../../data/models/dm_message.dart';
 import '../../data/services/auth_service.dart';
@@ -116,8 +118,8 @@ class _DMChatPageState extends State<DMChatPage> {
           children: [
             const SizedBox(height: 8),
             ListTile(
-              leading: const Icon(Icons.add_reaction_outlined, color: AppColors.textPrimary),
-              title: const Text('React', style: TextStyle(color: AppColors.textPrimary)),
+              leading: Icon(Icons.add_reaction_outlined, color: AppColors.textPrimary),
+              title: Text('React', style: TextStyle(color: AppColors.textPrimary)),
               onTap: () async {
                 Navigator.pop(context);
                 final emoji = await showEmojiPicker(context);
@@ -134,8 +136,8 @@ class _DMChatPageState extends State<DMChatPage> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.reply_outlined, color: AppColors.textPrimary),
-              title: const Text('Trả lời', style: TextStyle(color: AppColors.textPrimary)),
+              leading: Icon(Icons.reply_outlined, color: AppColors.textPrimary),
+              title: Text('Trả lời', style: TextStyle(color: AppColors.textPrimary)),
               onTap: () {
                 Navigator.pop(context);
                 setState(() => _replyingTo = msg);
@@ -143,9 +145,9 @@ class _DMChatPageState extends State<DMChatPage> {
             ),
             if (isOwn) ...[
               ListTile(
-                leading: const Icon(Icons.edit_outlined,
+                leading: Icon(Icons.edit_outlined,
                     color: AppColors.textPrimary),
-                title: const Text('Sửa tin nhắn',
+                title: Text('Sửa tin nhắn',
                     style: TextStyle(color: AppColors.textPrimary)),
                 onTap: () {
                   Navigator.pop(context);
@@ -153,9 +155,9 @@ class _DMChatPageState extends State<DMChatPage> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.delete_outline,
+                leading: Icon(Icons.delete_outline,
                     color: AppColors.danger),
-                title: const Text('Xóa tin nhắn',
+                title: Text('Xóa tin nhắn',
                     style: TextStyle(color: AppColors.danger)),
                 onTap: () {
                   Navigator.pop(context);
@@ -176,19 +178,19 @@ class _DMChatPageState extends State<DMChatPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.channelSidebar,
-        title: const Text('Sửa tin nhắn',
+        title: Text('Sửa tin nhắn',
             style: TextStyle(color: AppColors.textPrimary)),
         content: TextField(
           controller: controller,
           autofocus: true,
           maxLines: null,
-          style: const TextStyle(color: AppColors.textPrimary),
+          style: TextStyle(color: AppColors.textPrimary),
           decoration: const InputDecoration(hintText: 'Nội dung tin nhắn'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Huỷ',
+            child: Text('Huỷ',
                 style: TextStyle(color: AppColors.textMuted)),
           ),
           ElevatedButton(
@@ -218,14 +220,14 @@ class _DMChatPageState extends State<DMChatPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.channelSidebar,
-        title: const Text('Xóa tin nhắn?',
+        title: Text('Xóa tin nhắn?',
             style: TextStyle(color: AppColors.textPrimary)),
-        content: const Text('Tin nhắn này sẽ bị xóa vĩnh viễn.',
+        content: Text('Tin nhắn này sẽ bị xóa vĩnh viễn.',
             style: TextStyle(color: AppColors.textMuted)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Huỷ',
+            child: Text('Huỷ',
                 style: TextStyle(color: AppColors.textMuted)),
           ),
           ElevatedButton(
@@ -330,7 +332,7 @@ class _DMChatPageState extends State<DMChatPage> {
       appBar: AppBar(
         backgroundColor: AppColors.channelSidebar,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textMuted),
+          icon: Icon(Icons.arrow_back, color: AppColors.textMuted),
           onPressed: () => Navigator.pop(context),
         ),
         titleSpacing: 0,
@@ -344,7 +346,7 @@ class _DMChatPageState extends State<DMChatPage> {
             const SizedBox(width: 10),
             Text(
               _otherName,
-              style: const TextStyle(
+              style: TextStyle(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.w600,
                   fontSize: 16),
@@ -352,7 +354,7 @@ class _DMChatPageState extends State<DMChatPage> {
           ],
         ),
         elevation: 0,
-        bottom: const PreferredSize(
+        bottom: PreferredSize(
           preferredSize: Size.fromHeight(1),
           child: Divider(color: AppColors.divider, height: 1),
         ),
@@ -368,10 +370,10 @@ class _DMChatPageState extends State<DMChatPage> {
                   return Center(
                       child: Text('Lỗi: ${snapshot.error}',
                           style:
-                              const TextStyle(color: AppColors.danger)));
+                              TextStyle(color: AppColors.danger)));
                 }
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
+                  return Center(
                       child:
                           CircularProgressIndicator(color: AppColors.accent));
                 }
@@ -392,7 +394,7 @@ class _DMChatPageState extends State<DMChatPage> {
                         const SizedBox(height: 16),
                         Text(
                           _otherName,
-                          style: const TextStyle(
+                          style: TextStyle(
                               color: AppColors.textPrimary,
                               fontSize: 22,
                               fontWeight: FontWeight.w800),
@@ -401,7 +403,7 @@ class _DMChatPageState extends State<DMChatPage> {
                         Text(
                           'Đây là lúc bắt đầu cuộc trò chuyện với $_otherName',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                               color: AppColors.textMuted, fontSize: 14),
                         ),
                       ],
@@ -447,6 +449,13 @@ class _DMChatPageState extends State<DMChatPage> {
                           currentUid: _currentUserId,
                           onLongPress: () =>
                               _showMessageActions(context, msg),
+                          onTapAuthor: isMe
+                              ? null
+                              : () => showUserProfile(
+                                    context,
+                                    userId: widget.otherUserId,
+                                    userName: _otherName,
+                                  ),
                           onReact: (emoji) async {
                             final hasReacted =
                                 (msg.reactions[emoji] ?? [])
@@ -510,6 +519,7 @@ class _DMMessageItem extends StatefulWidget {
   final String? senderPhotoURL;
   final String currentUid;
   final VoidCallback? onLongPress;
+  final VoidCallback? onTapAuthor;
   final void Function(String emoji) onReact;
 
   const _DMMessageItem({
@@ -521,6 +531,7 @@ class _DMMessageItem extends StatefulWidget {
     required this.currentUid,
     required this.onReact,
     this.onLongPress,
+    this.onTapAuthor,
   });
 
   @override
@@ -563,17 +574,20 @@ class _DMMessageItemState extends State<_DMMessageItem> {
               SizedBox(
                 width: 40,
                 child: widget.showHeader
-                    ? UserAvatar(
-                        name: widget.senderName,
-                        photoURL: widget.senderPhotoURL,
-                        radius: 16,
+                    ? GestureDetector(
+                        onTap: widget.onTapAuthor,
+                        child: UserAvatar(
+                          name: widget.senderName,
+                          photoURL: widget.senderPhotoURL,
+                          radius: 16,
+                        ),
                       )
                     : (_hovered
                         ? Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(
                               _formatInlineTime(msg.timestamp),
-                              style: const TextStyle(
+                              style: TextStyle(
                                   color: AppColors.textMuted, fontSize: 10),
                               textAlign: TextAlign.center,
                             ),
@@ -586,25 +600,28 @@ class _DMMessageItemState extends State<_DMMessageItem> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (widget.showHeader)
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          Text(
-                            widget.senderName,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
+                      GestureDetector(
+                        onTap: widget.onTapAuthor,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              widget.senderName,
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _formatTime(msg.timestamp),
-                            style: const TextStyle(
-                                color: AppColors.textMuted, fontSize: 11),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Text(
+                              _formatTime(msg.timestamp),
+                              style: TextStyle(
+                                  color: AppColors.textMuted, fontSize: 11),
+                            ),
+                          ],
+                        ),
                       ),
                     if (msg.replyToText != null)
                       _ReplyQuote(
@@ -614,24 +631,28 @@ class _DMMessageItemState extends State<_DMMessageItem> {
                     if (msg.imageUrl != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 4, bottom: 2),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            msg.imageUrl!,
-                            width: 260,
-                            fit: BoxFit.cover,
-                            loadingBuilder: (_, child, progress) =>
-                                progress == null
-                                    ? child
-                                    : const SizedBox(
-                                        width: 260,
-                                        height: 160,
-                                        child: Center(
-                                          child: CircularProgressIndicator(
-                                              color: AppColors.accent,
-                                              strokeWidth: 2),
+                        child: GestureDetector(
+                          onTap: () => ImageViewerPage.open(context,
+                              imageUrl: msg.imageUrl!),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              msg.imageUrl!,
+                              width: 260,
+                              fit: BoxFit.cover,
+                              loadingBuilder: (_, child, progress) =>
+                                  progress == null
+                                      ? child
+                                      : SizedBox(
+                                          width: 260,
+                                          height: 160,
+                                          child: Center(
+                                            child: CircularProgressIndicator(
+                                                color: AppColors.accent,
+                                                strokeWidth: 2),
+                                          ),
                                         ),
-                                      ),
+                            ),
                           ),
                         ),
                       ),
@@ -646,7 +667,7 @@ class _DMMessageItemState extends State<_DMMessageItem> {
                               child: FormattedText(text: msg.text),
                             ),
                             if (msg.isEdited)
-                              const Padding(
+                              Padding(
                                 padding: EdgeInsets.only(left: 4),
                                 child: Text(' (đã sửa)',
                                     style: TextStyle(
@@ -716,16 +737,16 @@ class _DateSeparator extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Row(
         children: [
-          const Expanded(child: Divider(color: AppColors.divider)),
+          Expanded(child: Divider(color: AppColors.divider)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Text(
               DateFormat('dd/MM/yyyy').format(date),
-              style: const TextStyle(
+              style: TextStyle(
                   color: AppColors.textMuted, fontSize: 12),
             ),
           ),
-          const Expanded(child: Divider(color: AppColors.divider)),
+          Expanded(child: Divider(color: AppColors.divider)),
         ],
       ),
     );
@@ -765,7 +786,7 @@ class _ReplyBar extends StatelessWidget {
               children: [
                 Text(
                   'Trả lời $senderName',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.accent,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -773,7 +794,7 @@ class _ReplyBar extends StatelessWidget {
                 ),
                 Text(
                   text.isEmpty ? '📷 Ảnh' : text,
-                  style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 12),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -781,7 +802,7 @@ class _ReplyBar extends StatelessWidget {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.close, color: AppColors.textMuted, size: 18),
+            icon: Icon(Icons.close, color: AppColors.textMuted, size: 18),
             onPressed: onCancel,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
@@ -808,7 +829,7 @@ class _ReplyQuote extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.black26,
         borderRadius: BorderRadius.circular(6),
-        border: const Border(
+        border: Border(
           left: BorderSide(color: AppColors.accent, width: 3),
         ),
       ),
@@ -817,7 +838,7 @@ class _ReplyQuote extends StatelessWidget {
         children: [
           Text(
             senderName,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.accent,
               fontSize: 11,
               fontWeight: FontWeight.w600,
@@ -825,7 +846,7 @@ class _ReplyQuote extends StatelessWidget {
           ),
           Text(
             text.isEmpty ? '📷 Ảnh' : text,
-            style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+            style: TextStyle(color: AppColors.textMuted, fontSize: 12),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -889,7 +910,7 @@ class _MessageInputState extends State<_MessageInput> {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             IconButton(
-              icon: const Icon(Icons.add_circle,
+              icon: Icon(Icons.add_circle,
                   color: AppColors.textMuted, size: 24),
               onPressed: widget.onPickImage,
               tooltip: 'Gửi ảnh',
@@ -901,7 +922,7 @@ class _MessageInputState extends State<_MessageInput> {
                 constraints: const BoxConstraints(maxHeight: 120),
                 child: TextField(
                   controller: widget.controller,
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: AppColors.textPrimary, fontSize: 15),
                   minLines: 1,
                   maxLines: 4,
@@ -915,7 +936,7 @@ class _MessageInputState extends State<_MessageInput> {
                     contentPadding:
                         const EdgeInsets.symmetric(vertical: 12),
                     hintText: 'Nhắn tin cho ${widget.recipientName}',
-                    hintStyle: const TextStyle(
+                    hintStyle: TextStyle(
                         color: AppColors.textMuted, fontSize: 15),
                   ),
                 ),
@@ -926,7 +947,7 @@ class _MessageInputState extends State<_MessageInput> {
               child: _hasText
                   ? IconButton(
                       key: const ValueKey('send'),
-                      icon: const Icon(Icons.send_rounded,
+                      icon: Icon(Icons.send_rounded,
                           color: AppColors.accent, size: 22),
                       onPressed: widget.onSend,
                       tooltip: 'Gửi',

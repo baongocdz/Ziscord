@@ -76,7 +76,7 @@ class _CreateServerPageState extends State<CreateServerPage> {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'TÊN SERVER',
               style: TextStyle(
                 color: AppColors.textMuted,
@@ -89,7 +89,7 @@ class _CreateServerPageState extends State<CreateServerPage> {
             TextField(
               controller: _nameController,
               autofocus: true,
-              style: const TextStyle(color: AppColors.textPrimary),
+              style: TextStyle(color: AppColors.textPrimary),
               decoration: const InputDecoration(
                 hintText: 'Server của tôi',
               ),
@@ -107,12 +107,12 @@ class _CreateServerPageState extends State<CreateServerPage> {
                 onChanged: (v) => setState(() => _isPublic = v),
                 activeThumbColor: AppColors.accent,
                 activeTrackColor: AppColors.accent.withValues(alpha: 0.5),
-                title: const Text(
+                title: Text(
                   'Server công khai',
                   style: TextStyle(
                       color: AppColors.textPrimary, fontWeight: FontWeight.w600),
                 ),
-                subtitle: const Text(
+                subtitle: Text(
                   'Mọi người có thể tìm kiếm và tham gia',
                   style: TextStyle(color: AppColors.textMuted, fontSize: 12),
                 ),
@@ -143,7 +143,7 @@ class _CreateServerPageState extends State<CreateServerPage> {
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Tạo server sẽ tự tạo kênh #general. Bạn có thể thêm kênh sau trong cài đặt server.',
               style: TextStyle(color: AppColors.textMuted, fontSize: 12),
             ),

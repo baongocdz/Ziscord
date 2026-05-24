@@ -68,7 +68,7 @@ class MiniVoiceBar extends StatelessWidget {
                                   child: Text(
                                     session.channelName,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                         color: AppColors.textPrimary,
                                         fontWeight: FontWeight.w700,
                                         fontSize: 13),
@@ -80,7 +80,7 @@ class MiniVoiceBar extends StatelessWidget {
                               'Trong ${session.serverName}',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                   color: AppColors.textMuted, fontSize: 11),
                             ),
                           ],

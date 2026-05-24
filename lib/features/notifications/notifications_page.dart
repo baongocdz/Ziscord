@@ -42,7 +42,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Text(
               'Thông báo',
@@ -53,7 +53,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
               ),
             ),
           ),
-          const Divider(color: AppColors.divider, height: 1),
+          Divider(color: AppColors.divider, height: 1),
           Expanded(child: _buildContent()),
         ],
       ),
@@ -115,7 +115,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                   tapTargetSize:
                                       MaterialTapTargetSize.shrinkWrap,
                                 ),
-                                child: const Text('Đánh dấu đã đọc',
+                                child: Text('Đánh dấu đã đọc',
                                     style: TextStyle(
                                         color: AppColors.accent,
                                         fontSize: 11,
@@ -148,7 +148,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   Widget _buildEmpty() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -175,7 +175,7 @@ class _SectionHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       child: Text(
         title.toUpperCase(),
-        style: const TextStyle(
+        style: TextStyle(
           color: AppColors.textMuted,
           fontSize: 11,
           fontWeight: FontWeight.w700,
@@ -223,13 +223,13 @@ class _FriendRequestTile extends StatelessWidget {
           ),
           title: Text(
             displayName,
-            style: const TextStyle(
+            style: TextStyle(
                 color: AppColors.textPrimary, fontWeight: FontWeight.w600),
           ),
           subtitle: nickname.isNotEmpty
               ? Text('@$nickname',
                   style:
-                      const TextStyle(color: AppColors.textMuted, fontSize: 12))
+                      TextStyle(color: AppColors.textMuted, fontSize: 12))
               : null,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
@@ -394,7 +394,7 @@ class _DmNotificationTile extends StatelessWidget {
       ),
       title: Text(
         friend.displayName,
-        style: const TextStyle(
+        style: TextStyle(
             color: AppColors.textPrimary, fontWeight: FontWeight.w700),
       ),
       subtitle: Text(
@@ -402,12 +402,12 @@ class _DmNotificationTile extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style:
-            const TextStyle(color: AppColors.textPrimary, fontSize: 13),
+            TextStyle(color: AppColors.textPrimary, fontSize: 13),
       ),
       trailing: Container(
         width: 10,
         height: 10,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppColors.accent,
           shape: BoxShape.circle,
         ),
@@ -505,7 +505,7 @@ class _MentionTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
               ),
               alignment: Alignment.center,
-              child: const Text('@',
+              child: Text('@',
                   style: TextStyle(
                       color: AppColors.accent,
                       fontWeight: FontWeight.w800,
@@ -521,7 +521,7 @@ class _MentionTile extends StatelessWidget {
                       Expanded(
                         child: Text.rich(
                           TextSpan(
-                            style: const TextStyle(
+                            style: TextStyle(
                                 color: AppColors.textPrimary, fontSize: 14),
                             children: [
                               TextSpan(
@@ -538,7 +538,7 @@ class _MentionTile extends StatelessWidget {
                       ),
                       Text(
                         _relativeTime(mention.timestamp),
-                        style: const TextStyle(
+                        style: TextStyle(
                             color: AppColors.textMuted, fontSize: 11),
                       ),
                     ],
@@ -546,7 +546,7 @@ class _MentionTile extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     _contextLabel,
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: AppColors.textMuted, fontSize: 11),
                   ),
                   const SizedBox(height: 4),
@@ -554,7 +554,7 @@ class _MentionTile extends StatelessWidget {
                     mention.messagePreview,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: AppColors.textPrimary, fontSize: 13),
                   ),
                 ],
@@ -565,7 +565,7 @@ class _MentionTile extends StatelessWidget {
               Container(
                 width: 8,
                 height: 8,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.accent,
                   shape: BoxShape.circle,
                 ),

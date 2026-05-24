@@ -141,14 +141,14 @@ class _ServerSearchPageState extends State<ServerSearchPage>
       appBar: AppBar(
         backgroundColor: AppColors.channelSidebar,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textMuted),
+          icon: Icon(Icons.arrow_back, color: AppColors.textMuted),
           onPressed: () => Navigator.pop(context),
         ),
         titleSpacing: 0,
         title: _buildSearchField(),
         actions: [
           IconButton(
-            icon: const Icon(Icons.tune, color: AppColors.textMuted),
+            icon: Icon(Icons.tune, color: AppColors.textMuted),
             onPressed: () {},
             tooltip: 'Bộ lọc',
           ),
@@ -201,20 +201,20 @@ class _ServerSearchPageState extends State<ServerSearchPage>
       child: TextField(
         controller: _searchController,
         autofocus: true,
-        style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+        style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
         decoration: InputDecoration(
           isDense: true,
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-          prefixIcon: const Icon(Icons.search,
+          prefixIcon: Icon(Icons.search,
               color: AppColors.textMuted, size: 18),
           prefixIconConstraints:
               const BoxConstraints(minWidth: 32, minHeight: 32),
           suffixIcon: _query.isNotEmpty
               ? IconButton(
-                  icon: const Icon(Icons.close,
+                  icon: Icon(Icons.close,
                       color: AppColors.textMuted, size: 18),
                   onPressed: () => _searchController.clear(),
                   padding: EdgeInsets.zero,
@@ -223,7 +223,7 @@ class _ServerSearchPageState extends State<ServerSearchPage>
               : null,
           hintText: 'Tìm kiếm trong ${widget.server.name}',
           hintStyle:
-              const TextStyle(color: AppColors.textMuted, fontSize: 14),
+              TextStyle(color: AppColors.textMuted, fontSize: 14),
         ),
       ),
     );
@@ -324,7 +324,7 @@ class _ServerSearchPageState extends State<ServerSearchPage>
 
   Widget _buildMediaTab() {
     if (_loadingMedia) {
-      return const Center(
+      return Center(
           child: CircularProgressIndicator(color: AppColors.accent));
     }
     final media = _filteredMedia;
@@ -441,7 +441,7 @@ class _ServerSearchPageState extends State<ServerSearchPage>
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.w700,
                 fontSize: 13,
@@ -451,7 +451,7 @@ class _ServerSearchPageState extends State<ServerSearchPage>
           if (trailing != null)
             Text(
               trailing,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.accent,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -471,7 +471,7 @@ class _ServerSearchPageState extends State<ServerSearchPage>
           const SizedBox(height: 8),
           Text(
             label ?? 'Không có kết quả',
-            style: const TextStyle(color: AppColors.textMuted, fontSize: 14),
+            style: TextStyle(color: AppColors.textMuted, fontSize: 14),
           ),
         ],
       ),
@@ -517,7 +517,7 @@ class _RecentChannelTile extends StatelessWidget {
                       Flexible(
                         child: Text(
                           channel.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.textPrimary,
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
@@ -526,12 +526,12 @@ class _RecentChannelTile extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 4),
-                      const Icon(Icons.lock_outline,
+                      Icon(Icons.lock_outline,
                           color: AppColors.textMuted, size: 12),
                     ],
                   ),
                   const SizedBox(height: 2),
-                  const Text(
+                  Text(
                     'Kênh trong server',
                     style: TextStyle(
                       color: AppColors.textMuted,
@@ -543,7 +543,7 @@ class _RecentChannelTile extends StatelessWidget {
             ),
             if (onClose != null)
               IconButton(
-                icon: const Icon(Icons.close,
+                icon: Icon(Icons.close,
                     color: AppColors.textMuted, size: 18),
                 onPressed: onClose,
                 padding: EdgeInsets.zero,
@@ -595,7 +595,7 @@ class _MemberTile extends StatelessWidget {
                       Flexible(
                         child: Text(
                           member.effectiveName,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.textPrimary,
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
@@ -612,7 +612,7 @@ class _MemberTile extends StatelessWidget {
                             color: AppColors.accent.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text(
+                          child: Text(
                             'Admin',
                             style: TextStyle(
                                 color: AppColors.accent,
@@ -627,7 +627,7 @@ class _MemberTile extends StatelessWidget {
                       member.displayName.isNotEmpty)
                     Text(
                       member.displayName,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppColors.textMuted, fontSize: 12),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -669,11 +669,11 @@ class _MediaTile extends StatelessWidget {
               fit: BoxFit.cover,
               loadingBuilder: (_, child, progress) => progress == null
                   ? child
-                  : const Center(
+                  : Center(
                       child: CircularProgressIndicator(
                           color: AppColors.accent, strokeWidth: 2),
                     ),
-              errorBuilder: (_, _, _) => const Center(
+              errorBuilder: (_, _, _) => Center(
                 child: Icon(Icons.broken_image,
                     color: AppColors.textMuted, size: 28),
               ),

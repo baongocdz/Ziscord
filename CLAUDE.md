@@ -64,19 +64,24 @@ Ziscord là Discord clone mobile (Flutter). Mục tiêu cuối cùng là app mob
 - Friend request & accept
 - Upload avatar và ảnh trong tin nhắn (Cloudinary)
 - Server: tạo, đổi tên/icon, public/private, invite code, leave/delete
-- Channels: tạo/xóa/đổi tên/reorder, hai loại text (chat + library) và voice (chỉ tạo, chưa join được)
+- Channels: tạo/xóa/đổi tên/reorder, hai loại text (chat + library) và voice
+- Voice channel: join/leave qua Agora RTC, mute, listen-only, camera publish/subscribe, speaking glow, mini voice bar
 - Library: tạo post, comment
 - Chat trong channel: gửi text + ảnh, reply, edit, delete, react emoji, pin
+- Image zoom viewer cho ảnh trong chat (pinch-to-zoom)
 - @mention với mention picker, mention inbox + badge per-channel
 - Pending member approval (toggle trong server settings)
 - Server nickname per user
 - Notifications tab: lời mời kết bạn, tin nhắn chưa đọc, mentions
+- Multi-theme (Discord Dark / Sáng / Midnight / Ocean) với picker trong Profile
+- Status message (lời nhắn) hiển thị trong user profile sheet
+- User profile sheet hiển thị banner, avatar, lời nhắn — tap avatar/tên trong DM/channel để mở
 
 ### Chưa làm
-- **Voice channel join logic** (Agora integration — kế hoạch sắp tới)
-- Token server (Firebase Cloud Function) cho Agora
+- Token server (Firebase Cloud Function) cho Agora — hiện đang dùng config tĩnh
 - Push notification ngoài app (FCM)
 - UI polish: badge "có yêu cầu chờ duyệt" cho admin trên server icon
+- Cleanup nickname global (hiện đã ẩn khỏi form profile nhưng vẫn dùng ở contacts/notifications/server-search)
 
 ## Architecture
 

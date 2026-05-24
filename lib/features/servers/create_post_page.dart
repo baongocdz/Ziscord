@@ -90,17 +90,17 @@ class _CreatePostPageState extends State<CreatePostPage> {
         backgroundColor: AppColors.channelSidebar,
         title: Text(
           widget.isEditing ? 'Sửa bài đăng' : widget.channelName,
-          style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
+          style: TextStyle(color: AppColors.textPrimary, fontSize: 16),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.close, color: AppColors.textMuted),
+          icon: Icon(Icons.close, color: AppColors.textMuted),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: _sending
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
@@ -129,11 +129,11 @@ class _CreatePostPageState extends State<CreatePostPage> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: TextField(
               controller: _titleController,
-              style: const TextStyle(
+              style: TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 18,
                   fontWeight: FontWeight.w600),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Tiêu đề bài đăng',
                 hintStyle:
                     TextStyle(color: AppColors.textMuted, fontSize: 18),
@@ -144,7 +144,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
               onChanged: (_) => setState(() {}),
             ),
           ),
-          const Divider(height: 1, color: AppColors.divider),
+          Divider(height: 1, color: AppColors.divider),
           Expanded(
             child: Container(
               color: AppColors.channelSidebar,
@@ -152,9 +152,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: TextField(
                 controller: _contentController,
-                style: const TextStyle(
+                style: TextStyle(
                     color: AppColors.textPrimary, fontSize: 15),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'Nội dung bài đăng...',
                   hintStyle: TextStyle(color: AppColors.textMuted),
                   border: InputBorder.none,

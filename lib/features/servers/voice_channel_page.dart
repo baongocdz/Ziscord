@@ -143,7 +143,7 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
       appBar: AppBar(
         backgroundColor: AppColors.channelSidebar,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textMuted),
+          icon: Icon(Icons.arrow_back, color: AppColors.textMuted),
           onPressed: _popOnly,
           tooltip: 'Quay lại (vẫn ở trong kênh thoại)',
         ),
@@ -160,7 +160,7 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
             Expanded(
               child: Text(widget.channel.name,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.w600,
                       fontSize: 16)),
@@ -169,14 +169,14 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.chat_bubble_outline,
+            icon: Icon(Icons.chat_bubble_outline,
                 color: AppColors.textMuted, size: 20),
             tooltip: 'Mở chat của kênh',
             onPressed: _openChat,
           ),
         ],
         elevation: 0,
-        bottom: const PreferredSize(
+        bottom: PreferredSize(
           preferredSize: Size.fromHeight(1),
           child: Divider(color: AppColors.divider, height: 1),
         ),
@@ -255,13 +255,13 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
-          const Icon(Icons.swap_horiz, color: AppColors.accent, size: 16),
+          Icon(Icons.swap_horiz, color: AppColors.accent, size: 16),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               'Đang ở kênh "${s.channelName}". Bấm "Chuyển sang kênh này" để rời và join.',
               style:
-                  const TextStyle(color: AppColors.textPrimary, fontSize: 12),
+                  TextStyle(color: AppColors.textPrimary, fontSize: 12),
             ),
           ),
         ],
@@ -279,14 +279,14 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.headset_off,
+                Icon(Icons.headset_off,
                     size: 48, color: AppColors.textMuted),
                 const SizedBox(height: 12),
                 Text(
                   inThis
                       ? 'Chưa có ai khác trong kênh thoại'
                       : 'Chưa có ai trong kênh thoại',
-                  style: const TextStyle(color: AppColors.textMuted),
+                  style: TextStyle(color: AppColors.textMuted),
                 ),
               ],
             ),
@@ -613,7 +613,7 @@ class _VoiceTileState extends State<_VoiceTile> {
               child: Row(
                 children: [
                   if (m.isMuted) ...[
-                    const Icon(Icons.mic_off,
+                    Icon(Icons.mic_off,
                         color: AppColors.danger, size: 14),
                     const SizedBox(width: 4),
                   ],
@@ -622,7 +622,7 @@ class _VoiceTileState extends State<_VoiceTile> {
                       m.displayName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w600,
                         fontSize: 13,

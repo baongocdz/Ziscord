@@ -7,7 +7,10 @@
       "PowerShell(flutter devices 2>&1)",
       "PowerShell(& \"C:\\\\Users\\\\ADMIN\\\\AppData\\\\Local\\\\Android\\\\sdk\\\\platform-tools\\\\adb.exe\" devices)",
       "Bash(cat \"/c/Users/ADMIN/AppData/Local/Pub/Cache/hosted/pub.dev/agora_rtc_engine-6.6.3/example/web/index.html\" 2>&1 | head -60)",
-      "Read(//c/Users/ADMIN/AppData/Local/Pub/Cache/hosted/pub.dev/agora_rtc_engine-6.6.3/example/web/**)"
+      "Read(//c/Users/ADMIN/AppData/Local/Pub/Cache/hosted/pub.dev/agora_rtc_engine-6.6.3/example/web/**)",
+      "Bash(flutter run *)",
+      "Bash(findstr /R \"error - Invalid\")",
+      "PowerShell(& .\\\\strip_const.ps1)"
     ]
   }
 }
