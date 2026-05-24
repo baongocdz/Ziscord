@@ -175,14 +175,6 @@ class VoiceService {
       await engine.disableVideo();
     } catch (_) {}
 
-    try {
-      await engine.enableAudioVolumeIndication(
-        interval: 250,
-        smooth: 3,
-        reportVad: false,
-      );
-    } catch (_) {}
-
     engine.registerEventHandler(RtcEngineEventHandler(
       onUserJoined: (conn, remoteUid, elapsed) {
         _remoteAgoraUids.add(remoteUid);
@@ -214,7 +206,7 @@ class VoiceService {
         onConnectionState?.call(state);
       },
       onAudioVolumeIndication: (conn, speakers, speakerNumber, totalVolume) {
-        const threshold = 25;
+        const threshold = 10;
         final next = <int>{};
         for (final s in speakers) {
           final v = s.volume ?? 0;
@@ -224,6 +216,8 @@ class VoiceService {
         }
         final cur = speakingAgoraUids.value;
         if (next.length != cur.length || !next.containsAll(cur)) {
+          debugPrint(
+              '[voice] speaking change: total=$totalVolume speakers=${speakers.map((s) => "${s.uid}:${s.volume}").toList()} → $next');
           speakingAgoraUids.value = next;
         }
       },
@@ -283,6 +277,19 @@ class VoiceService {
         debugPrint('[voice] joinChannel FAILED even in listen-only: $e2');
         rethrow;
       }
+    }
+
+    // Volume indication must be enabled AFTER joinChannel on Agora Web SDK
+    // (it operates on the active client/connection).
+    try {
+      await engine.enableAudioVolumeIndication(
+        interval: 250,
+        smooth: 3,
+        reportVad: false,
+      );
+      debugPrint('[voice] enableAudioVolumeIndication OK');
+    } catch (e) {
+      debugPrint('[voice] enableAudioVolumeIndication FAILED: $e');
     }
 
     await _voiceMembers(serverId, channelId).doc(uid).set({
