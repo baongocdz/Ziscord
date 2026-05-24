@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/user_profile_sheet.dart';
 import '../../data/models/friend.dart';
 import '../../data/models/friend_request.dart';
 import '../../data/services/auth_service.dart';
@@ -281,6 +282,11 @@ class _FriendTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      onTap: () => showUserProfile(
+        context,
+        userId: friend.uid,
+        userName: friend.displayName,
+      ),
       leading: CircleAvatar(
         radius: 20,
         backgroundColor: AppColors.accent,
@@ -295,8 +301,10 @@ class _FriendTile extends StatelessWidget {
       title: Text(friend.displayName,
           style: TextStyle(
               color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
-      subtitle: Text('@${friend.nickname}',
-          style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+      subtitle: friend.nickname.isNotEmpty
+          ? Text('@${friend.nickname}',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 12))
+          : null,
       trailing: PopupMenuButton<String>(
         icon: Icon(Icons.more_horiz, color: AppColors.textMuted),
         color: AppColors.channelSidebar,

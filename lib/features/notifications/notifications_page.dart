@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/user_profile_sheet.dart';
 import '../../data/models/friend.dart';
 import '../../data/models/friend_request.dart';
 import '../../data/models/mention_record.dart';
@@ -212,6 +213,11 @@ class _FriendRequestTile extends StatelessWidget {
         return ListTile(
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          onTap: () => showUserProfile(
+            context,
+            userId: request.fromUid,
+            userName: displayName,
+          ),
           leading: CircleAvatar(
             radius: 20,
             backgroundColor: AppColors.accent,
@@ -381,15 +387,22 @@ class _DmNotificationTile extends StatelessWidget {
     return ListTile(
       contentPadding:
           const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: CircleAvatar(
-        radius: 20,
-        backgroundColor: AppColors.accent,
-        child: Text(
-          friend.displayName.isNotEmpty
-              ? friend.displayName[0].toUpperCase()
-              : '?',
-          style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.w700),
+      leading: GestureDetector(
+        onTap: () => showUserProfile(
+          context,
+          userId: friend.uid,
+          userName: friend.displayName,
+        ),
+        child: CircleAvatar(
+          radius: 20,
+          backgroundColor: AppColors.accent,
+          child: Text(
+            friend.displayName.isNotEmpty
+                ? friend.displayName[0].toUpperCase()
+                : '?',
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.w700),
+          ),
         ),
       ),
       title: Text(

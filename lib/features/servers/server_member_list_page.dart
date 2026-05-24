@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/user_profile_sheet.dart';
 import '../../data/models/server.dart';
 import '../../data/models/server_member.dart';
 import '../../data/services/auth_service.dart';
@@ -172,6 +173,13 @@ class _MemberTile extends StatelessWidget {
     final name = member.effectiveName;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      onTap: isCurrentUser
+          ? null
+          : () => showUserProfile(
+                context,
+                userId: member.uid,
+                userName: name,
+              ),
       leading: CircleAvatar(
         radius: 18,
         backgroundColor:

@@ -185,39 +185,44 @@ class _UserProfileSheetState extends State<_UserProfileSheet> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        if (statusMessage.isNotEmpty) ...[
-                          const SizedBox(height: 12),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppColors.background,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'LỜI NHẮN',
-                                  style: TextStyle(
-                                    color: AppColors.textMuted,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  statusMessage,
-                                  style: TextStyle(
-                                    color: AppColors.textPrimary,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        const SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                        ],
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'LỜI NHẮN',
+                                style: TextStyle(
+                                  color: AppColors.textMuted,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                statusMessage.isNotEmpty
+                                    ? statusMessage
+                                    : 'Chưa có lời nhắn',
+                                style: TextStyle(
+                                  color: statusMessage.isNotEmpty
+                                      ? AppColors.textPrimary
+                                      : AppColors.textMuted,
+                                  fontSize: 14,
+                                  fontStyle: statusMessage.isNotEmpty
+                                      ? FontStyle.normal
+                                      : FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                         const SizedBox(height: 20),
                         Row(
                           children: [
