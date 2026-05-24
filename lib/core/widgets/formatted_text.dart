@@ -27,7 +27,7 @@ class FormattedText extends StatelessWidget {
     r'|\*\*([^*\n]+)\*\*'
     r'|\*([^*\n]+)\*'
     r'|~~([^~\n]+)~~'
-    r"|(@[\wÀ-ɏḀ-ỿ]+)",
+    r"|(@[\wÀ-ɏḀ-ỿ][\wÀ-ɏḀ-ỿ\s]*)",
   );
 
   @override
