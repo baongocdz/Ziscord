@@ -1,6 +1,6 @@
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../core/constants/agora_config.dart';
@@ -17,9 +17,15 @@ class VoiceService {
   String? _currentServerId;
   String? _currentChannelId;
   String? _currentUid;
+  int? _localAgoraUid;
   bool _isMuted = false;
   bool _listenOnly = false;
   final Set<int> _remoteAgoraUids = {};
+
+  /// Set of Agora UIDs currently above the speaking volume threshold. Local
+  /// user is mapped to [_localAgoraUid] (Agora reports local as uid=0).
+  final ValueNotifier<Set<int>> speakingAgoraUids =
+      ValueNotifier<Set<int>>(const <int>{});
 
   bool get isMuted => _isMuted;
   bool get isListenOnly => _listenOnly;
@@ -47,8 +53,14 @@ class VoiceService {
         .map((s) => s.docs.length);
   }
 
-  /// Asks for mic permission, initializes the Agora engine, joins the channel,
-  /// and writes the current user to the voice_members subcollection.
+  /// Maps a Firebase uid to the deterministic Agora numeric uid used in join.
+  static int agoraUidFor(String firebaseUid) =>
+      firebaseUid.hashCode & 0x7FFFFFFF;
+
+  /// Initializes the Agora engine, joins the channel, and writes the current
+  /// user to the voice_members subcollection. If the device has no mic or the
+  /// permission is denied, falls back silently to listen-only mode (the user
+  /// still hears others and is shown as muted to everyone).
   Future<void> join({
     required String serverId,
     required String channelId,
@@ -60,36 +72,73 @@ class VoiceService {
     void Function(String message)? onError,
     void Function(ConnectionStateType state)? onConnectionState,
   }) async {
-    // On web, permission_handler is a no-op for microphone — Agora's
-    // enableAudio() will trigger the browser's native getUserMedia() prompt
-    // instead. Only native platforms need the explicit pre-flight check.
     if (!kIsWeb) {
       final status = await Permission.microphone.request();
       if (!status.isGranted) {
-        throw Exception('Cần cấp quyền micro để vào kênh thoại');
+        _listenOnly = true;
       }
     }
 
     _currentServerId = serverId;
     _currentChannelId = channelId;
     _currentUid = uid;
-    _listenOnly = false;
+    _localAgoraUid = agoraUidFor(uid);
+    speakingAgoraUids.value = const <int>{};
 
     final engine = createAgoraRtcEngine();
     _engine = engine;
     await engine.initialize(const RtcEngineContext(appId: AgoraConfig.appId));
-    await engine.setChannelProfile(ChannelProfileType.channelProfileCommunication);
+    await engine
+        .setChannelProfile(ChannelProfileType.channelProfileCommunication);
 
-    // Try to enable mic capture. If the device has no microphone (NotFoundError)
-    // or the user blocked the permission, fall back to listen-only mode so the
-    // user can still hear others speak. The page reads `isListenOnly` after
-    // join to show a non-blocking banner.
+    // enableAudio() turns on BOTH mic capture and remote-audio playback. If it
+    // throws (no mic / mic blocked), retry with local-audio disabled so that
+    // playback still works — that lets the user listen even without a mic.
     try {
       await engine.enableAudio();
     } catch (_) {
       _listenOnly = true;
+      try {
+        await engine.enableLocalAudio(false);
+        await engine.enableAudio();
+      } catch (_) {
+        // Last-ditch — keep going so we at least join the channel.
+      }
     }
-    await engine.disableVideo();
+
+    if (_listenOnly) {
+      try {
+        await engine.enableLocalAudio(false);
+      } catch (_) {}
+    }
+
+    try {
+      await engine.setAudioProfile(
+        profile: AudioProfileType.audioProfileDefault,
+        scenario: AudioScenarioType.audioScenarioGameStreaming,
+      );
+    } catch (_) {}
+
+    if (!kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS)) {
+      try {
+        await engine.setDefaultAudioRouteToSpeakerphone(true);
+      } catch (_) {}
+    }
+
+    try {
+      await engine.disableVideo();
+    } catch (_) {}
+
+    // Periodic volume reports power the "who is speaking" ring.
+    try {
+      await engine.enableAudioVolumeIndication(
+        interval: 250,
+        smooth: 3,
+        reportVad: false,
+      );
+    } catch (_) {}
 
     engine.registerEventHandler(RtcEngineEventHandler(
       onUserJoined: (conn, remoteUid, elapsed) {
@@ -98,22 +147,51 @@ class VoiceService {
       },
       onUserOffline: (conn, remoteUid, reason) {
         _remoteAgoraUids.remove(remoteUid);
+        final next = Set<int>.from(speakingAgoraUids.value)..remove(remoteUid);
+        if (next.length != speakingAgoraUids.value.length) {
+          speakingAgoraUids.value = next;
+        }
         onRemoteLeft?.call(remoteUid);
       },
       onError: (err, msg) {
+        // Audio-device errors are already handled by listen-only fallback —
+        // surfacing them as a red banner would be noise.
+        final lower = msg.toLowerCase();
+        if (lower.contains('device') ||
+            lower.contains('microphone') ||
+            lower.contains('mic ') ||
+            lower.contains('record') ||
+            lower.contains('playout') ||
+            lower.contains('audio')) {
+          return;
+        }
         onError?.call('Agora ${err.name}: $msg');
       },
       onConnectionStateChanged: (conn, state, reason) {
         onConnectionState?.call(state);
       },
+      onAudioVolumeIndication: (conn, speakers, speakerNumber, totalVolume) {
+        const threshold = 25; // 0-255; below this is ambient noise
+        final next = <int>{};
+        for (final s in speakers) {
+          final v = s.volume ?? 0;
+          if (v < threshold) continue;
+          final aUid = (s.uid == null || s.uid == 0)
+              ? _localAgoraUid
+              : s.uid;
+          if (aUid != null) next.add(aUid);
+        }
+        final cur = speakingAgoraUids.value;
+        if (next.length != cur.length || !next.containsAll(cur)) {
+          speakingAgoraUids.value = next;
+        }
+      },
     ));
 
-    // Use a deterministic numeric UID derived from the Firebase uid.
-    final agoraUid = uid.hashCode & 0x7FFFFFFF;
     await engine.joinChannel(
       token: '',
       channelId: AgoraConfig.channelName(serverId, channelId),
-      uid: agoraUid,
+      uid: _localAgoraUid!,
       options: ChannelMediaOptions(
         clientRoleType: ClientRoleType.clientRoleBroadcaster,
         channelProfile: ChannelProfileType.channelProfileCommunication,
@@ -134,6 +212,7 @@ class VoiceService {
   Future<void> toggleMute() async {
     final engine = _engine;
     if (engine == null) return;
+    if (_listenOnly) return;
     _isMuted = !_isMuted;
     await engine.muteLocalAudioStream(_isMuted);
     final sid = _currentServerId;
@@ -156,15 +235,22 @@ class VoiceService {
     _currentServerId = null;
     _currentChannelId = null;
     _currentUid = null;
+    _localAgoraUid = null;
     _isMuted = false;
+    _listenOnly = false;
     _remoteAgoraUids.clear();
+    speakingAgoraUids.value = const <int>{};
 
     if (sid != null && cid != null && uid != null) {
       await _voiceMembers(sid, cid).doc(uid).delete().catchError((_) {});
     }
     if (engine != null) {
-      await engine.leaveChannel();
-      await engine.release();
+      try {
+        await engine.leaveChannel();
+      } catch (_) {}
+      try {
+        await engine.release();
+      } catch (_) {}
     }
   }
 }

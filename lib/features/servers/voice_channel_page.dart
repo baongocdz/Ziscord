@@ -13,6 +13,8 @@ import '../../data/services/server_service.dart';
 import '../../data/services/user_service.dart';
 import '../../data/services/voice_service.dart';
 
+const Color _speakingGreen = Color(0xFF23A559);
+
 class VoiceChannelPage extends StatefulWidget {
   final Server server;
   final ServerChannel channel;
@@ -36,19 +38,17 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
   bool _connected = false;
   bool _muted = false;
   bool _listenOnly = false;
-  String? _errorMessage;
   ConnectionStateType? _agoraState;
 
   Future<void> _join() async {
     setState(() {
       _joining = true;
-      _errorMessage = null;
     });
     try {
       final uid = AuthService().currentUser!.uid;
       final user = await _userService.getUserById(uid);
-      final nickname = await _serverService.getServerNickname(
-          widget.server.id, uid);
+      final nickname =
+          await _serverService.getServerNickname(widget.server.id, uid);
       final displayName = nickname?.trim().isNotEmpty == true
           ? nickname!.trim()
           : user?.displayName ?? 'User';
@@ -59,10 +59,6 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
         uid: uid,
         displayName: displayName,
         photoURL: user?.photoURL,
-        onError: (msg) {
-          if (!mounted) return;
-          setState(() => _errorMessage = msg);
-        },
         onConnectionState: (state) {
           if (!mounted) return;
           setState(() => _agoraState = state);
@@ -76,28 +72,16 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
         _listenOnly = _voiceService.isListenOnly;
         _muted = _voiceService.isMuted;
       });
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
+      // Service falls back to listen-only on mic issues, so any exception
+      // here is non-recoverable network/token failure — reset and let the
+      // user tap the join button again. No red banner.
       setState(() {
         _joining = false;
-        _errorMessage = _translateError(e);
+        _connected = false;
       });
     }
-  }
-
-  String _translateError(Object e) {
-    final s = e.toString();
-    if (s.contains('NotFoundError') ||
-        s.contains('Requested device not found')) {
-      return 'Không tìm thấy microphone. Cắm hoặc bật micro trong cài đặt hệ thống, sau đó thử lại.';
-    }
-    if (s.contains('NotAllowedError') || s.contains('Permission')) {
-      return 'Bạn đã chặn quyền microphone. Cho phép quyền trong cài đặt trình duyệt rồi thử lại.';
-    }
-    if (s.contains('NotReadableError')) {
-      return 'Microphone đang được app khác sử dụng. Tắt app đó (Zoom, OBS, Discord…) rồi thử lại.';
-    }
-    return 'Lỗi vào kênh: $e';
   }
 
   Future<void> _toggleMute() async {
@@ -164,7 +148,6 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
         body: Column(
           children: [
             if (_connected) _buildStatusBanner(),
-            if (_connected && _listenOnly) _buildListenOnlyBanner(),
             Expanded(child: _buildBody()),
             _buildControlBar(),
           ],
@@ -182,41 +165,20 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
       case ConnectionStateType.connectionStateReconnecting:
         return 'Đang kết nối lại...';
       case ConnectionStateType.connectionStateFailed:
-        return 'Kết nối Agora thất bại';
+        return 'Mất kết nối, đang thử lại...';
       case ConnectionStateType.connectionStateDisconnected:
-        return 'Mất kết nối';
+        return 'Đang kết nối lại...';
       default:
         return 'Đang khởi tạo...';
     }
   }
 
-  Widget _buildListenOnlyBanner() {
-    return Container(
-      width: double.infinity,
-      color: AppColors.accent.withValues(alpha: 0.12),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: const Row(
-        children: [
-          Icon(Icons.hearing, color: AppColors.accent, size: 16),
-          SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Chế độ chỉ nghe — máy không có micro hoặc bị chặn quyền. Bạn vẫn nghe được người khác nói.',
-              style: TextStyle(color: AppColors.accent, fontSize: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildStatusBanner() {
-    final hasError = _errorMessage != null;
-    final stateLabel = _stateLabel(_agoraState);
-    final isHealthy = _agoraState == ConnectionStateType.connectionStateConnected;
-    final color = hasError || _agoraState == ConnectionStateType.connectionStateFailed
-        ? AppColors.danger
-        : (isHealthy ? const Color(0xFF23A559) : AppColors.textMuted);
+    final isHealthy =
+        _agoraState == ConnectionStateType.connectionStateConnected;
+    // Don't show a banner once we're cleanly connected — keeps the UI quiet.
+    if (isHealthy) return const SizedBox.shrink();
+    final color = AppColors.textMuted;
     return Container(
       width: double.infinity,
       color: color.withValues(alpha: 0.12),
@@ -231,9 +193,9 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              hasError ? _errorMessage! : stateLabel,
+              _stateLabel(_agoraState),
               style: TextStyle(color: color, fontSize: 12),
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -266,41 +228,33 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
             ),
           );
         }
-        return GridView.builder(
-          padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 1.1,
-          ),
-          itemCount: members.length,
-          itemBuilder: (_, i) => _VoiceTile(member: members[i]),
+        return ValueListenableBuilder<Set<int>>(
+          valueListenable: _voiceService.speakingAgoraUids,
+          builder: (context, speakingSet, _) {
+            return GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 1.1,
+              ),
+              itemCount: members.length,
+              itemBuilder: (_, i) {
+                final m = members[i];
+                final agoraUid = VoiceService.agoraUidFor(m.uid);
+                final isSpeaking =
+                    speakingSet.contains(agoraUid) && !m.isMuted;
+                return _VoiceTile(member: m, isSpeaking: isSpeaking);
+              },
+            );
+          },
         );
       },
     );
   }
 
   Widget _buildControlBar() {
-    if (_errorMessage != null && !_connected) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        color: AppColors.channelSidebar,
-        child: Column(
-          children: [
-            Text(_errorMessage!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.danger)),
-            const SizedBox(height: 12),
-            _bigButton(
-                label: 'Thử lại',
-                color: AppColors.accent,
-                icon: Icons.refresh,
-                onTap: _join),
-          ],
-        ),
-      );
-    }
     if (!_connected) {
       return Container(
         padding: const EdgeInsets.all(16),
@@ -308,12 +262,13 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
         child: _bigButton(
           label: _joining ? 'Đang vào...' : 'Vào kênh thoại',
           icon: Icons.call,
-          color: const Color(0xFF23A559),
+          color: _speakingGreen,
           onTap: _joining ? null : _join,
         ),
       );
     }
 
+    final micOff = _listenOnly || _muted;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       color: AppColors.channelSidebar,
@@ -321,16 +276,12 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _circleBtn(
-            icon: _listenOnly
-                ? Icons.mic_off
-                : (_muted ? Icons.mic_off : Icons.mic),
-            color: (_listenOnly || _muted)
-                ? AppColors.danger
-                : AppColors.textPrimary,
+            icon: micOff ? Icons.mic_off : Icons.mic,
+            color: micOff ? AppColors.danger : AppColors.textPrimary,
             bg: AppColors.background,
             onTap: _listenOnly ? null : _toggleMute,
             tooltip: _listenOnly
-                ? 'Không có micro'
+                ? 'Không có micro — chế độ chỉ nghe'
                 : (_muted ? 'Bật micro' : 'Tắt micro'),
           ),
           const SizedBox(width: 24),
@@ -402,7 +353,8 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
 
 class _VoiceTile extends StatelessWidget {
   final VoiceMember member;
-  const _VoiceTile({required this.member});
+  final bool isSpeaking;
+  const _VoiceTile({required this.member, required this.isSpeaking});
 
   @override
   Widget build(BuildContext context) {
@@ -417,10 +369,30 @@ class _VoiceTile extends StatelessWidget {
         children: [
           Stack(
             children: [
-              UserAvatar(
-                  name: member.displayName,
-                  photoURL: member.photoURL,
-                  radius: 36),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 120),
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSpeaking ? _speakingGreen : Colors.transparent,
+                    width: 3,
+                  ),
+                  boxShadow: isSpeaking
+                      ? [
+                          BoxShadow(
+                            color: _speakingGreen.withValues(alpha: 0.45),
+                            blurRadius: 10,
+                            spreadRadius: 1,
+                          ),
+                        ]
+                      : null,
+                ),
+                child: UserAvatar(
+                    name: member.displayName,
+                    photoURL: member.photoURL,
+                    radius: 36),
+              ),
               if (member.isMuted)
                 Positioned(
                   right: 0,
@@ -454,4 +426,3 @@ class _VoiceTile extends StatelessWidget {
     );
   }
 }
-
