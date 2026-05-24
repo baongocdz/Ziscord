@@ -206,12 +206,10 @@ class VoiceService {
       } catch (_) {}
     }
 
-    // Enable video module so the user CAN turn the camera on later, but keep
-    // local capture off until they explicitly toggle it.
-    try {
-      await engine.enableVideo();
-      await engine.enableLocalVideo(false);
-    } catch (_) {}
+    // Video module is NOT initialized here — defer it to setCamera(true) so
+    // voice-only sessions don't touch any video state. Lifecycle-coupling
+    // video init with voice init has caused audio subscription issues with
+    // agora_rtc_engine on Web.
     _cameraOn = false;
     cameraNotifier.value = false;
 
@@ -291,11 +289,6 @@ class VoiceService {
           clientRoleType: ClientRoleType.clientRoleBroadcaster,
           channelProfile: ChannelProfileType.channelProfileCommunication,
           publishMicrophoneTrack: !listenOnly,
-          // Start with camera publish OFF — flipped explicitly via
-          // updateChannelMediaOptions when user toggles camera on. Setting
-          // true here while no track exists makes Agora cache a "muted"
-          // signal that doesn't clear when track is created later.
-          publishCameraTrack: false,
           autoSubscribeAudio: true,
           autoSubscribeVideo: true,
         ),
@@ -420,33 +413,39 @@ class VoiceService {
 
     if (on) {
       Object? failure;
+      // Lazy video module init. enableVideo() is the FIRST video call ever
+      // made on this engine in this session — defer'd from join so voice-only
+      // sessions don't pay any video setup cost.
       try {
         // ignore: avoid_print
-        print('[voice] calling enableLocalVideo(true)...');
-        await engine.enableLocalVideo(true);
+        print('[voice] enableVideo()...');
+        await engine.enableVideo();
       } catch (e) {
         failure = e;
       }
       if (failure == null) {
         try {
           // ignore: avoid_print
-          print('[voice] calling startPreview()...');
-          await engine.startPreview();
+          print('[voice] enableLocalVideo(true)...');
+          await engine.enableLocalVideo(true);
         } catch (e) {
-          // On Agora Web SDK, the actual createCameraVideoTrack happens here,
-          // so failures here are the real ones (NotReadableError etc).
           failure = e;
         }
       }
       if (failure == null) {
-        // Explicitly flip channel options to publish the camera track. Just
-        // creating the track via enableLocalVideo is NOT enough on Agora Web
-        // SDK — remote clients receive a "video muted" signal until the
-        // publish flag is updated. Always re-pass publishMicrophoneTrack so
-        // updateChannelMediaOptions doesn't accidentally unset it.
         try {
           // ignore: avoid_print
-          print('[voice] updateChannelMediaOptions(publishCameraTrack: true)...');
+          print('[voice] startPreview()...');
+          await engine.startPreview();
+        } catch (e) {
+          // On Agora Web SDK, the actual createCameraVideoTrack happens here.
+          failure = e;
+        }
+      }
+      if (failure == null) {
+        // Publish the camera track. updateChannelMediaOptions must keep
+        // publishMicrophoneTrack consistent with the listen-only state.
+        try {
           await engine.updateChannelMediaOptions(
             ChannelMediaOptions(
               publishCameraTrack: true,
