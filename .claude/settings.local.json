@@ -10,7 +10,8 @@
       "Read(//c/Users/ADMIN/AppData/Local/Pub/Cache/hosted/pub.dev/agora_rtc_engine-6.6.3/example/web/**)",
       "Bash(flutter run *)",
       "Bash(findstr /R \"error - Invalid\")",
-      "PowerShell(& .\\\\strip_const.ps1)"
+      "PowerShell(& .\\\\strip_const.ps1)",
+      "Bash(git reset *)"
     ]
   }
 }
