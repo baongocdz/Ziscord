@@ -311,7 +311,7 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
                     inThis && speakingSet.contains(agoraUid) && !m.isMuted;
                 final isLocal = m.uid == AuthService().currentUser?.uid;
                 return _VoiceTile(
-                  key: ValueKey('${m.uid}-${m.cameraOn}'),
+                  key: ValueKey(m.uid),
                   member: m,
                   isSpeaking: isSpeaking,
                   isLocal: isLocal,
