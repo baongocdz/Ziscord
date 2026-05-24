@@ -13,6 +13,7 @@ import '../notifications/notifications_page.dart';
 import '../profile/profile_page.dart';
 import '../servers/browse_servers_page.dart';
 import '../servers/create_server_page.dart';
+import '../servers/mini_voice_bar.dart';
 import '../servers/server_page.dart';
 
 class MainScaffold extends StatefulWidget {
@@ -68,28 +69,34 @@ class _MainScaffoldState extends State<MainScaffold> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(child: _buildBody()),
-      bottomNavigationBar: StreamBuilder<int>(
-        stream: FriendService().streamPendingCount(_currentUid),
-        builder: (context, friendSnap) {
-          return StreamBuilder<int>(
-            stream: MentionService().streamUnreadCount(_currentUid),
-            builder: (context, mentionSnap) {
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const MiniVoiceBar(),
+          StreamBuilder<int>(
+            stream: FriendService().streamPendingCount(_currentUid),
+            builder: (context, friendSnap) {
               return StreamBuilder<int>(
-                stream: DMService().streamTotalUnread(_currentUid),
-                builder: (context, dmSnap) {
-                  final total = (friendSnap.data ?? 0) +
-                      (mentionSnap.data ?? 0) +
-                      (dmSnap.data ?? 0);
-                  return _BottomNav(
-                    currentIndex: _tab,
-                    notificationBadge: total,
-                    onTap: (i) => setState(() => _tab = i),
+                stream: MentionService().streamUnreadCount(_currentUid),
+                builder: (context, mentionSnap) {
+                  return StreamBuilder<int>(
+                    stream: DMService().streamTotalUnread(_currentUid),
+                    builder: (context, dmSnap) {
+                      final total = (friendSnap.data ?? 0) +
+                          (mentionSnap.data ?? 0) +
+                          (dmSnap.data ?? 0);
+                      return _BottomNav(
+                        currentIndex: _tab,
+                        notificationBadge: total,
+                        onTap: (i) => setState(() => _tab = i),
+                      );
+                    },
                   );
                 },
               );
             },
-          );
-        },
+          ),
+        ],
       ),
     );
   }

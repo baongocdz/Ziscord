@@ -8,10 +8,12 @@ import '../../core/widgets/user_avatar.dart';
 import '../../data/models/server.dart';
 import '../../data/models/server_channel.dart';
 import '../../data/models/voice_member.dart';
+import '../../data/models/voice_session.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/server_service.dart';
 import '../../data/services/user_service.dart';
 import '../../data/services/voice_service.dart';
+import 'channel_chat_page.dart';
 
 const Color _speakingGreen = Color(0xFF23A559);
 
@@ -35,12 +37,10 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
   final _serverService = ServerService();
 
   bool _joining = false;
-  bool _connected = false;
-  bool _muted = false;
-  bool _listenOnly = false;
   ConnectionStateType? _agoraState;
 
   Future<void> _join() async {
+    debugPrint('[voice-page] _join() tap');
     setState(() {
       _joining = true;
     });
@@ -56,6 +56,9 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
       await _voiceService.join(
         serverId: widget.server.id,
         channelId: widget.channel.id,
+        serverName: widget.server.name,
+        channelName: widget.channel.name,
+        channelIcon: widget.channel.icon,
         uid: uid,
         displayName: displayName,
         photoURL: user?.photoURL,
@@ -68,18 +71,12 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
       if (!mounted) return;
       setState(() {
         _joining = false;
-        _connected = true;
-        _listenOnly = _voiceService.isListenOnly;
-        _muted = _voiceService.isMuted;
       });
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('[voice-page] _join() FAILED: $e\n$st');
       if (!mounted) return;
-      // Service falls back to listen-only on mic issues, so any exception
-      // here is non-recoverable network/token failure — reset and let the
-      // user tap the join button again. No red banner.
       setState(() {
         _joining = false;
-        _connected = false;
       });
     }
   }
@@ -87,71 +84,93 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
   Future<void> _toggleMute() async {
     await _voiceService.toggleMute();
     if (!mounted) return;
-    setState(() => _muted = _voiceService.isMuted);
+    setState(() {});
   }
 
-  Future<void> _leave() async {
+  /// Leave voice AND pop the page. Bound to the red phone button.
+  Future<void> _leaveAndPop() async {
     final navigator = Navigator.of(context);
     await _voiceService.leave();
     if (!mounted) return;
     navigator.pop();
   }
 
-  @override
-  void dispose() {
-    _voiceService.leave();
-    super.dispose();
+  /// Just pop the page. Voice continues in background. Bound to back arrow.
+  void _popOnly() {
+    Navigator.of(context).pop();
+  }
+
+  void _openChat() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            ChannelChatPage(server: widget.server, channel: widget.channel),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: !_connected,
-      onPopInvokedWithResult: (didPop, _) async {
-        if (didPop) return;
-        final navigator = Navigator.of(context);
-        await _voiceService.leave();
-        if (!mounted) return;
-        navigator.pop();
-      },
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          backgroundColor: AppColors.channelSidebar,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColors.textMuted),
-            onPressed: _leave,
-          ),
-          titleSpacing: 0,
-          title: Row(
-            children: [
-              ChannelIcon(
-                customIcon: widget.channel.icon,
-                fallbackIcon: Icons.volume_up_rounded,
-                color: AppColors.textMuted,
-                size: 18,
-              ),
-              const SizedBox(width: 6),
-              Text(widget.channel.name,
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.channelSidebar,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.textMuted),
+          onPressed: _popOnly,
+          tooltip: 'Quay lại (vẫn ở trong kênh thoại)',
+        ),
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            ChannelIcon(
+              customIcon: widget.channel.icon,
+              fallbackIcon: Icons.volume_up_rounded,
+              color: AppColors.textMuted,
+              size: 18,
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(widget.channel.name,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.w600,
                       fontSize: 16)),
-            ],
-          ),
-          elevation: 0,
-          bottom: const PreferredSize(
-            preferredSize: Size.fromHeight(1),
-            child: Divider(color: AppColors.divider, height: 1),
-          ),
-        ),
-        body: Column(
-          children: [
-            if (_connected) _buildStatusBanner(),
-            Expanded(child: _buildBody()),
-            _buildControlBar(),
+            ),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.chat_bubble_outline,
+                color: AppColors.textMuted, size: 20),
+            tooltip: 'Mở chat của kênh',
+            onPressed: _openChat,
+          ),
+        ],
+        elevation: 0,
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(color: AppColors.divider, height: 1),
+        ),
+      ),
+      body: ValueListenableBuilder<VoiceSession?>(
+        valueListenable: _voiceService.currentSession,
+        builder: (context, session, _) {
+          final inThis = session != null &&
+              session.serverId == widget.server.id &&
+              session.channelId == widget.channel.id;
+          final inOther = session != null && !inThis;
+          return Column(
+            children: [
+              if (inThis) _buildStatusBanner(),
+              if (inOther) _buildOtherChannelBanner(session),
+              Expanded(child: _buildBody(inThis)),
+              _buildControlBar(inThis, inOther),
+            ],
+          );
+        },
       ),
     );
   }
@@ -176,7 +195,6 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
   Widget _buildStatusBanner() {
     final isHealthy =
         _agoraState == ConnectionStateType.connectionStateConnected;
-    // Don't show a banner once we're cleanly connected — keeps the UI quiet.
     if (isHealthy) return const SizedBox.shrink();
     final color = AppColors.textMuted;
     return Container(
@@ -204,10 +222,30 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildOtherChannelBanner(VoiceSession s) {
+    return Container(
+      width: double.infinity,
+      color: AppColors.accent.withValues(alpha: 0.14),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
+        children: [
+          const Icon(Icons.swap_horiz, color: AppColors.accent, size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Đang ở kênh "${s.channelName}". Bấm "Chuyển sang kênh này" để rời và join.',
+              style:
+                  const TextStyle(color: AppColors.textPrimary, fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody(bool inThis) {
     return StreamBuilder<List<VoiceMember>>(
-      stream:
-          _voiceService.streamMembers(widget.server.id, widget.channel.id),
+      stream: _voiceService.streamMembers(widget.server.id, widget.channel.id),
       builder: (context, snap) {
         final members = snap.data ?? const <VoiceMember>[];
         if (members.isEmpty) {
@@ -219,7 +257,7 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
                     size: 48, color: AppColors.textMuted),
                 const SizedBox(height: 12),
                 Text(
-                  _connected
+                  inThis
                       ? 'Chưa có ai khác trong kênh thoại'
                       : 'Chưa có ai trong kênh thoại',
                   style: const TextStyle(color: AppColors.textMuted),
@@ -244,7 +282,7 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
                 final m = members[i];
                 final agoraUid = VoiceService.agoraUidFor(m.uid);
                 final isSpeaking =
-                    speakingSet.contains(agoraUid) && !m.isMuted;
+                    inThis && speakingSet.contains(agoraUid) && !m.isMuted;
                 return _VoiceTile(member: m, isSpeaking: isSpeaking);
               },
             );
@@ -254,8 +292,20 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
     );
   }
 
-  Widget _buildControlBar() {
-    if (!_connected) {
+  Widget _buildControlBar(bool inThis, bool inOther) {
+    if (inOther) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        color: AppColors.channelSidebar,
+        child: _bigButton(
+          label: _joining ? 'Đang chuyển...' : 'Chuyển sang kênh này',
+          icon: Icons.swap_horiz,
+          color: AppColors.accent,
+          onTap: _joining ? null : _join,
+        ),
+      );
+    }
+    if (!inThis) {
       return Container(
         padding: const EdgeInsets.all(16),
         color: AppColors.channelSidebar,
@@ -268,7 +318,9 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
       );
     }
 
-    final micOff = _listenOnly || _muted;
+    final listenOnly = _voiceService.isListenOnly;
+    final muted = _voiceService.isMuted;
+    final micOff = listenOnly || muted;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       color: AppColors.channelSidebar,
@@ -279,17 +331,17 @@ class _VoiceChannelPageState extends State<VoiceChannelPage> {
             icon: micOff ? Icons.mic_off : Icons.mic,
             color: micOff ? AppColors.danger : AppColors.textPrimary,
             bg: AppColors.background,
-            onTap: _listenOnly ? null : _toggleMute,
-            tooltip: _listenOnly
+            onTap: listenOnly ? null : _toggleMute,
+            tooltip: listenOnly
                 ? 'Không có micro — chế độ chỉ nghe'
-                : (_muted ? 'Bật micro' : 'Tắt micro'),
+                : (muted ? 'Bật micro' : 'Tắt micro'),
           ),
           const SizedBox(width: 24),
           _circleBtn(
             icon: Icons.call_end,
             color: Colors.white,
             bg: AppColors.danger,
-            onTap: _leave,
+            onTap: _leaveAndPop,
             tooltip: 'Rời kênh',
           ),
         ],

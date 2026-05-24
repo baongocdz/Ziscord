@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/channel_icon_picker.dart';
+import '../../core/widgets/user_avatar.dart';
 import '../../data/models/server.dart';
 import '../../data/models/server_channel.dart';
 import '../../data/models/server_member.dart';
+import '../../data/models/voice_member.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/server_service.dart';
 import '../../data/services/voice_service.dart';
@@ -572,27 +574,43 @@ class _ChannelList extends StatelessWidget {
             Material(color: Colors.transparent, child: child),
         itemBuilder: (context, i) {
           final ch = section[i];
-          return _ManageableChannelTile(
+          return Column(
             key: ValueKey(ch.id),
-            serverId: server.id,
-            channel: ch,
-            index: i,
-            isAdmin: isAdmin,
-            unreadCount: _unreadFor(ch),
-            onTap: () => _openChannel(context, ch),
-            onEdit: () => _editChannel(context, ch),
-            onDelete: () => _deleteChannel(context, ch),
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _ManageableChannelTile(
+                serverId: server.id,
+                channel: ch,
+                index: i,
+                isAdmin: isAdmin,
+                unreadCount: _unreadFor(ch),
+                onTap: () => _openChannel(context, ch),
+                onEdit: () => _editChannel(context, ch),
+                onDelete: () => _deleteChannel(context, ch),
+              ),
+              if (ch.isVoice)
+                _VoiceMemberList(
+                    serverId: server.id, channelId: ch.id),
+            ],
           );
         },
       );
     }
     return Column(
       children: section
-          .map((ch) => _ChannelTile(
-                serverId: server.id,
-                channel: ch,
-                unreadCount: _unreadFor(ch),
-                onTap: () => _openChannel(context, ch),
+          .map((ch) => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _ChannelTile(
+                    serverId: server.id,
+                    channel: ch,
+                    unreadCount: _unreadFor(ch),
+                    onTap: () => _openChannel(context, ch),
+                  ),
+                  if (ch.isVoice)
+                    _VoiceMemberList(
+                        serverId: server.id, channelId: ch.id),
+                ],
               ))
           .toList(),
     );
@@ -640,7 +658,6 @@ class _ManageableChannelTile extends StatelessWidget {
   final VoidCallback onDelete;
 
   const _ManageableChannelTile({
-    super.key,
     required this.serverId,
     required this.channel,
     required this.index,
@@ -920,6 +937,93 @@ class _VoiceCountChip extends StatelessWidget {
                       color: AppColors.textMuted,
                       fontSize: 11,
                       fontWeight: FontWeight.w700)),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ─── Voice Member List (under voice channels) ────────────────────────────────
+
+class _VoiceMemberList extends StatelessWidget {
+  final String serverId;
+  final String channelId;
+
+  const _VoiceMemberList({required this.serverId, required this.channelId});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<VoiceMember>>(
+      stream: VoiceService().streamMembers(serverId, channelId),
+      builder: (context, snap) {
+        final members = snap.data ?? const <VoiceMember>[];
+        if (members.isEmpty) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(left: 30, right: 8, bottom: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: members
+                .map((m) => _VoiceMemberRow(member: m))
+                .toList(),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _VoiceMemberRow extends StatelessWidget {
+  final VoiceMember member;
+  const _VoiceMemberRow({required this.member});
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<Set<int>>(
+      valueListenable: VoiceService().speakingAgoraUids,
+      builder: (context, speakingSet, _) {
+        final agoraUid = VoiceService.agoraUidFor(member.uid);
+        final isSpeaking =
+            speakingSet.contains(agoraUid) && !member.isMuted;
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 120),
+                padding: const EdgeInsets.all(1.5),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSpeaking
+                        ? const Color(0xFF23A559)
+                        : Colors.transparent,
+                    width: 1.5,
+                  ),
+                ),
+                child: UserAvatar(
+                  name: member.displayName,
+                  photoURL: member.photoURL,
+                  radius: 10,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  member.displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: AppColors.textMuted, fontSize: 12),
+                ),
+              ),
+              if (member.isMuted)
+                const Padding(
+                  padding: EdgeInsets.only(left: 4),
+                  child: Icon(Icons.mic_off,
+                      color: AppColors.danger, size: 12),
+                ),
             ],
           ),
         );
