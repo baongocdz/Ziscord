@@ -217,8 +217,25 @@ class VoiceService {
 
     engine.registerEventHandler(RtcEngineEventHandler(
       onUserJoined: (conn, remoteUid, elapsed) {
+        // ignore: avoid_print
+        print('[voice] onUserJoined remoteUid=$remoteUid');
         _remoteAgoraUids.add(remoteUid);
         onRemoteJoined?.call(remoteUid);
+      },
+      onRemoteVideoStateChanged: (conn, remoteUid, state, reason, elapsed) {
+        // ignore: avoid_print
+        print(
+            '[voice] onRemoteVideoStateChanged remoteUid=$remoteUid state=${state.name} reason=${reason.name}');
+      },
+      onFirstRemoteVideoFrame: (conn, remoteUid, width, height, elapsed) {
+        // ignore: avoid_print
+        print(
+            '[voice] onFirstRemoteVideoFrame remoteUid=$remoteUid ${width}x$height');
+      },
+      onLocalVideoStateChanged: (source, state, error) {
+        // ignore: avoid_print
+        print(
+            '[voice] onLocalVideoStateChanged source=${source.name} state=${state.name} error=${error.name}');
       },
       onUserOffline: (conn, remoteUid, reason) {
         _remoteAgoraUids.remove(remoteUid);

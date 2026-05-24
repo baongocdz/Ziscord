@@ -492,16 +492,25 @@ class _VoiceTileState extends State<_VoiceTile> {
     if (widget.isLocal) {
       _videoController = VideoViewController(
         rtcEngine: engine,
-        canvas: const VideoCanvas(uid: 0),
+        canvas: const VideoCanvas(
+          uid: 0,
+          renderMode: RenderModeType.renderModeHidden,
+        ),
       );
     } else {
       final agoraUid = VoiceService.agoraUidFor(widget.member.uid);
       _videoController = VideoViewController.remote(
         rtcEngine: engine,
-        canvas: VideoCanvas(uid: agoraUid),
+        canvas: VideoCanvas(
+          uid: agoraUid,
+          renderMode: RenderModeType.renderModeHidden,
+        ),
         connection: RtcConnection(channelId: channel),
       );
     }
+    // Avoid analyzer "unused" warning for channel — it IS used above.
+    // ignore: avoid_print
+    print('[voice-tile] controller built isLocal=${widget.isLocal} channel=$channel');
   }
 
   void _disposeController() {
