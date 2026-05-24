@@ -259,7 +259,10 @@ class VoiceService {
           clientRoleType: ClientRoleType.clientRoleBroadcaster,
           channelProfile: ChannelProfileType.channelProfileCommunication,
           publishMicrophoneTrack: !listenOnly,
-          publishCameraTrack: false,
+          // Always publish if a video track exists. The track only exists
+          // when enableLocalVideo(true) is called, so this is harmless when
+          // camera is off.
+          publishCameraTrack: true,
           autoSubscribeAudio: true,
           autoSubscribeVideo: true,
         ),
@@ -350,32 +353,37 @@ class VoiceService {
   /// Turn camera on/off. On web this triggers the browser's camera prompt the
   /// first time. Returns true on success, false if camera unavailable / denied.
   Future<bool> setCamera(bool on) async {
+    debugPrint('[voice] setCamera($on) — current=$_cameraOn');
     final engine = _engine;
-    if (engine == null) return false;
+    if (engine == null) {
+      // ignore: avoid_print
+      print('[voice] setCamera: no engine');
+      return false;
+    }
     if (on == _cameraOn) return true;
 
     if (on) {
       try {
+        // On Agora Web SDK, enableLocalVideo(true) creates the camera track
+        // and the join's `publishCameraTrack: true` flag auto-publishes it.
+        debugPrint('[voice] enableLocalVideo(true)...');
         await engine.enableLocalVideo(true);
-        await engine.startPreview();
-        await engine.updateChannelMediaOptions(
-            const ChannelMediaOptions(publishCameraTrack: true));
+        debugPrint('[voice] enableLocalVideo(true) OK');
+        try {
+          await engine.startPreview();
+          debugPrint('[voice] startPreview OK');
+        } catch (e) {
+          debugPrint('[voice] startPreview FAILED (non-fatal): $e');
+        }
       } catch (e) {
-        debugPrint('[voice] setCamera(true) FAILED: $e');
-        // Best-effort rollback so we don't leak a half-enabled state.
+        // ignore: avoid_print
+        print('[voice] setCamera(true) FAILED: $e');
         try {
           await engine.enableLocalVideo(false);
-        } catch (_) {}
-        try {
-          await engine.stopPreview();
         } catch (_) {}
         return false;
       }
     } else {
-      try {
-        await engine.updateChannelMediaOptions(
-            const ChannelMediaOptions(publishCameraTrack: false));
-      } catch (_) {}
       try {
         await engine.stopPreview();
       } catch (_) {}
@@ -395,6 +403,7 @@ class VoiceService {
           .doc(uid)
           .update({'cameraOn': on}).catchError((_) {});
     }
+    debugPrint('[voice] setCamera($on) DONE');
     return true;
   }
 
